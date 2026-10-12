@@ -49,6 +49,7 @@ for kind in ('project','target'):
             }
         else:
             settings={
+                'ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon',
                 'CODE_SIGN_STYLE':'Automatic',
                 'GENERATE_INFOPLIST_FILE':'YES',
                 'INFOPLIST_KEY_UIApplicationSceneManifest_Generation':'YES',
