@@ -1,0 +1,54 @@
+## Xcode & User Specific Files
+#
+# Keep project settings, but ignore user-specific state and layout
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+
+## Xcode 8+ and Workspace State
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserdatad/
+
+## Schemes (Uncomment next line if you want to ignore ALL schemes, including shared ones)
+# *.xcscheme
+# Better practice: Commit shared schemes, ignore personal ones:
+*.xcodeproj/xcshareddata/xcschemes/!*.xcscheme
+
+## XCode Playgrounds & Documentation
+timeline.xctimeline
+playground.xcworkspace
+
+## Swift Package Manager
+# SPM build artifacts and resolved versions (check Package.resolved into git for apps, ignore for libraries)
+.build/
+Packages/
+# Package.resolved
+
+## Swiftlint / Tooling caches
+.swiftpm/
+.swiftlint.cache
+
+## CocoaPods (Uncomment Pods/ if you do NOT commit dependencies)
+# Pods/
+# Podfile.lock (Commit this for apps, ignore for reusable pods)
+
+## Carthage
+# Ignore checkouts/build artifacts (keep Carthage.resolved committed)
+Carthage/Build/
+Carthage/Checkouts/
+
+## Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test
+
