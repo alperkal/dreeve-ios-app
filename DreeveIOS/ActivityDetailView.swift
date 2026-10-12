@@ -8,6 +8,9 @@ struct ActivityDetailView: View {
     let activityID: String
 
     @State private var activity: DreeveActivity?
+    @State private var gear: [DreeveGear] = []
+    @State private var loadingGear = true
+    @State private var gearError: String?
     @State private var isEditing = false
     @State private var confirmDelete = false
     @State private var isBusy = false
@@ -37,6 +40,34 @@ struct ActivityDetailView: View {
                     if !activity.locationLabel.isEmpty {
                         Label(activity.locationLabel, systemImage: "mappin")
                             .foregroundStyle(DreeveTheme.muted)
+                    }
+                    SurfaceCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("GEAR").font(.caption.bold()).foregroundStyle(DreeveTheme.muted)
+                            if let id = activity.gearId, !id.isEmpty {
+                                if let item = gear.first(where: { $0.id == id }) {
+                                    GearSummaryView(gear: item)
+                                } else {
+                                    Text("Assigned gear: \(id)")
+                                    if loadingGear { ProgressView("Loading gear…") }
+                                    else if gearError == nil {
+                                        Text("This gear is no longer in the inventory.").font(.caption)
+                                    }
+                                }
+                            } else {
+                                Text("No gear assigned")
+                            }
+                            if let gearError {
+                                Text(gearError).font(.caption).foregroundStyle(.red)
+                                Button("Retry loading gear") { Task { await loadGear() } }
+                                    .disabled(loadingGear)
+                            }
+                            Button("Change gear", systemImage: "pencil") { isEditing = true }
+                                .disabled(!session.canUpload || isBusy)
+                            if !session.canUpload {
+                                Text("Changing gear requires Dreeve file import mode.").font(.caption)
+                            }
+                        }
                     }
                     RouteMapView(activity: activity)
                     LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
@@ -116,6 +147,7 @@ struct ActivityDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button("Edit", systemImage: "pencil") { isEditing = true }
+                            .disabled(!session.canUpload || isBusy)
                         Button("Delete activity", systemImage: "trash", role: .destructive) { confirmDelete = true }
                     } label: { Image(systemName: "ellipsis.circle") }
                 }
@@ -126,6 +158,7 @@ struct ActivityDetailView: View {
             if let activity {
                 ActivityEditorView(activity: activity) { edited in
                     self.activity = edited
+                    Task { await loadGear() }
                 }
             }
         }
@@ -160,6 +193,36 @@ struct ActivityDetailView: View {
     private func load() async {
         do { activity = try await session.getActivity(activityID) }
         catch { errorMessage = error.localizedDescription }
+        // Refresh capabilities after restoring a saved connection on app launch.
+        do { _ = try await session.testConnection() }
+        catch { errorMessage = error.localizedDescription }
+        await loadGear()
+    }
+
+    private func loadGear() async {
+        loadingGear = true
+        gearError = nil
+        defer { loadingGear = false }
+        do { gear = try await session.gear() }
+        catch { gearError = error.localizedDescription }
+    }
+}
+
+struct GearSummaryView: View {
+    let gear: DreeveGear
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(gear.name).font(.headline)
+            Text("\(gear.type.capitalized)\(gear.isRetired == true ? " · Retired" : "")")
+                .font(.caption).foregroundStyle(DreeveTheme.muted)
+            if let distance = gear.distanceInMeter {
+                Text("\((distance / 1000).oneDecimal) km total").font(.subheadline)
+            }
+            if let count = gear.numberOfActivities {
+                Text("\(count) activities").font(.caption).foregroundStyle(DreeveTheme.muted)
+            }
+        }
     }
 }
 
@@ -172,6 +235,10 @@ struct ActivityEditorView: View {
     @State private var name: String
     @State private var description: String
     @State private var sportType: String
+    @State private var selectedGearID: String?
+    @State private var gear: [DreeveGear] = []
+    @State private var loadingGear = true
+    @State private var gearError: String?
     @State private var saving = false
     @State private var errorMessage: String?
 
@@ -181,6 +248,7 @@ struct ActivityEditorView: View {
         _name = State(initialValue: activity.name)
         _description = State(initialValue: activity.description ?? "")
         _sportType = State(initialValue: activity.sportType)
+        _selectedGearID = State(initialValue: activity.gearId.flatMap { $0.isEmpty ? nil : $0 })
     }
 
     var body: some View {
@@ -189,6 +257,33 @@ struct ActivityEditorView: View {
                 TextField("Name", text: $name)
                 TextField("Sport type", text: $sportType)
                     .textInputAutocapitalization(.never)
+                Section("Gear") {
+                    Picker("Assigned gear", selection: $selectedGearID) {
+                        Text("No gear").tag(String?.none)
+                        if let id = activity.gearId, !id.isEmpty,
+                           !gear.contains(where: { $0.id == id }) {
+                            Text("Current gear (\(id))").tag(Optional(id))
+                        }
+                        ForEach(gear) { item in
+                            Text("\(item.name)\(item.isRetired == true ? " (Retired)" : "")")
+                                .tag(Optional(item.id))
+                        }
+                    }
+                    .disabled(loadingGear || gearError != nil || !session.canUpload)
+                    if loadingGear { ProgressView("Loading gear…") }
+                    if let gearError {
+                        Text(gearError).font(.caption).foregroundStyle(.red)
+                        Button("Retry") { Task { await loadGear() } }
+                    } else if !loadingGear && gear.isEmpty {
+                        Text("Your Dreeve inventory is empty.").font(.caption)
+                    }
+                    if let item = gear.first(where: { $0.id == selectedGearID }) {
+                        GearSummaryView(gear: item)
+                    }
+                    if !session.canUpload {
+                        Text("Editing requires Dreeve file import mode.").font(.caption)
+                    }
+                }
                 Section("Description") {
                     TextEditor(text: $description).frame(minHeight: 100)
                 }
@@ -198,23 +293,25 @@ struct ActivityEditorView: View {
                         .foregroundStyle(DreeveTheme.muted)
                 }
             }
+            .disabled(saving)
             .navigationTitle("Edit activity")
+            .task { await loadGear() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(saving) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task {
                             saving = true
                             defer { saving = false }
                             do {
-                                let value = try await session.saveActivity(activity.id, patch: ActivityPatch(name: name.trimmingCharacters(in: .whitespacesAndNewlines), sportType: sportType, description: description))
+                                let value = try await session.saveActivity(activity.id, patch: ActivityPatch(name: name.trimmingCharacters(in: .whitespacesAndNewlines), sportType: sportType, description: description, gear: GearChange.between(original: activity.gearId.flatMap { $0.isEmpty ? nil : $0 }, selected: selectedGearID)))
                                 didSave(value)
                                 dismiss()
                             } catch { errorMessage = error.localizedDescription }
                         }
                     }
-                    .disabled(saving || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || sportType.isEmpty)
+                    .disabled(saving || !session.canUpload || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || sportType.isEmpty)
                 }
             }
             .alert("Could not save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -222,5 +319,14 @@ struct ActivityEditorView: View {
             } message: { Text(errorMessage ?? "Unknown error") }
         }
         .tint(DreeveTheme.accent)
+        .interactiveDismissDisabled(saving)
+    }
+
+    private func loadGear() async {
+        loadingGear = true
+        gearError = nil
+        defer { loadingGear = false }
+        do { gear = try await session.gear() }
+        catch { gearError = error.localizedDescription }
     }
 }

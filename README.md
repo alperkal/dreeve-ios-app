@@ -7,7 +7,8 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 - Native dark-themed SwiftUI tab navigation: Overview, Activities, Upload, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
-- Edit name, description, and sport type; delete an activity with confirmation.
+- Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
+- Display assigned gear name, imported/custom type, retirement status, lifetime distance, and activity count. Choose existing gear (including retired items) or remove the assignment. Loading errors offer a retry, and missing inventory entries preserve the current assignment.
 - Add an image from the Photos library (when upload mode is supported).
 - Download an existing GPX and share it from the device.
 - Import `.fit`, `.tcx` and `.gpx` from Files using multipart upload, and view import job states. Import is asynchronous.
@@ -31,7 +32,8 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 | Validate connection | `GET /api/v1/status` |
 | List activities / dashboard queries | `GET /api/v1/activities` |
 | Detail / GPS route | `GET /api/v1/activities/{activityId}` |
-| Edit name/type/notes | `PATCH /api/v1/activities/{activityId}` |
+| Edit name/type/notes/gear | `PATCH /api/v1/activities/{activityId}` |
+| Gear inventory | `GET /api/v1/gear` |
 | Delete activity | `DELETE /api/v1/activities/{activityId}` |
 | GPX export | `GET /api/v1/activities/{activityId}/gpx` |
 | Add photo | `POST /api/v1/activities/{activityId}/images` |
@@ -45,7 +47,7 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 - No built-in social feed, follow relationships, kudos, or account-based login in the documented API. An API key gives server-level access and must **not** be hardcoded in a publicly distributed app. For multi-user App Store distribution, add per-user authentication and authorization server-side.
 - No offline database, background sync, push notifications, or HealthKit integration yet.
 - Photo viewing through static image URLs depends on whether the server permits those URLs to load without an authenticated cookie.
-- This project has not been built or run on an iOS Simulator here, because Xcode and the iOS SDK are not available in this environment. Build and API integration testing are required before production use.
+- The updated project builds for the generic iOS Simulator destination in Xcode. Interactive simulator operation and a live authenticated Dreeve integration test remain unverified.
 
 ## Code map
 
@@ -63,11 +65,38 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 
 Reference OpenAPI: https://docs.dreeve.app/api/openapi.yaml
 
-## Checks run in this environment
+## Gear API contract (checked October 12, 2026)
 
-- Parsed all Swift source with the Swift compiler frontend.
-- Typechecked the Foundation model and the portable networking implementation (using Linux shims for iOS-only file permissions).
-- Executed `DreeveIOSTests/ModelSmokeTest.swift` with synthetic API JSON, passed.
-- Validated the Xcode project structure syntax with `plutil -lint`.
+- Inventory: `GET /api/v1/gear` returns `{ "gear": [...] }`. The app joins an activity's nullable `gearId` to this inventory. `type` means `imported` or `custom`, not shoe/bike category. The documented example omits `isRetired`, so decoding tolerates missing metadata.
+- Assignment: `PATCH /api/v1/activities/{activityId}` with `gearId` set to the complete prefixed identifier (for example `gear-b12659861`).
+- Removal: explicitly send `"gearId": null`. Swift's default optional encoding would omit the key; the custom `ActivityPatch` encoder distinguishes omission, assignment, and removal.
+- Unchanged: omit `gearId` when saving other fields. An unknown current ID is retained rather than silently cleared when inventory loading fails or the gear no longer appears.
+- Save success: use the returned activity immediately in detail, activity list, and insights state; refresh the detail gear inventory to update totals. Failed saves stay in the editor and show the server explanation.
+- Updates require `IMPORT_MODE=files`. Details refresh server capabilities before enabling editing. Other import modes keep gear visible but disable changes; the server's 409 explanation is also surfaced if mode changes during an edit.
 
-None of these checks replace an actual build in Xcode or a live authenticated integration test against a Dreeve instance.
+Sources: [List gear](https://docs.dreeve.app/api/operations/listgear/) and [Update activity](https://docs.dreeve.app/api/operations/updateactivity/).
+
+## Verification
+
+Completed for this update:
+
+- Full Debug build with Xcode for the generic iOS Simulator destination, code signing disabled: **passed** (arm64 and x86_64).
+- Standalone gear contract tests using URLProtocol mocks: **passed**. Cover inventory metadata, empty inventory, omitted retirement metadata, nullable activity gear, assignment/removal/unchanged encoding, preserving missing current gear, authenticated GET/PATCH paths (including deployment subpath), response decoding, and 400/401/409 server errors.
+- Original model smoke test: **passed**.
+- Xcode project syntax validation and ZIP integrity: **passed**.
+
+Run the portable tests on macOS with Xcode installed:
+
+```sh
+./run_tests.sh
+```
+
+Test sources are standalone executables rather than an Xcode XCTest target. Run a simulator build from the project folder with:
+
+```sh
+xcodebuild -project DreeveIOS.xcodeproj -scheme DreeveIOS \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath /tmp/dreeve-build CODE_SIGNING_ALLOWED=NO build
+```
+
+Live instance checks still needed: open an activity with assigned gear, select another item and save, reopen the activity to confirm persistence, then choose No gear and confirm removal. Check an activity with no gear, a retired item, and an empty inventory. In Strava import mode, verify gear remains visible and editing is disabled. Test server/network errors and retry. No real server records were modified during this update.

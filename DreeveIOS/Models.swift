@@ -83,6 +83,32 @@ struct ActivityPatch: Encodable {
     let name: String
     let sportType: String
     let description: String
+    var gear: GearChange = .unchanged
+
+    enum CodingKeys: String, CodingKey { case name, sportType, description, gearId }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(name, forKey: .name)
+        try values.encode(sportType, forKey: .sportType)
+        try values.encode(description, forKey: .description)
+        switch gear {
+        case .unchanged: break // Omit: preserve gear when editing other fields.
+        case .assign(let id): try values.encode(id, forKey: .gearId)
+        case .remove: try values.encodeNil(forKey: .gearId)
+        }
+    }
+}
+
+enum GearChange {
+    case unchanged
+    case assign(String)
+    case remove
+
+    static func between(original: String?, selected: String?) -> GearChange {
+        guard original != selected else { return .unchanged }
+        return selected.map { .assign($0) } ?? .remove
+    }
 }
 
 struct UploadReceipt: Decodable {

@@ -3,6 +3,13 @@ import Foundation
 struct DreeveAPIClient: Sendable {
     let baseURL: URL
     let token: String
+    private let urlSession: URLSession
+
+    init(baseURL: URL, token: String, urlSession: URLSession = .shared) {
+        self.baseURL = baseURL
+        self.token = token
+        self.urlSession = urlSession
+    }
 
     static func validatedURL(_ address: String) throws -> URL {
         let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -34,7 +41,7 @@ struct DreeveAPIClient: Sendable {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
         try check(response, data: data)
         do { return try JSONDecoder().decode(T.self, from: data) }
         catch { throw APIError.decoding(error.localizedDescription) }
@@ -72,7 +79,7 @@ struct DreeveAPIClient: Sendable {
         var request = URLRequest(url: try endpoint("activities/\(safeSegment(id))"))
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
         try check(response, data: data)
     }
 
@@ -97,7 +104,7 @@ struct DreeveAPIClient: Sendable {
     func downloadGPX(_ id: String) async throws -> URL {
         var request = URLRequest(url: try endpoint("activities/\(safeSegment(id))/gpx"))
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
         try check(response, data: data)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("dreeve-\(safeFilename(id)).gpx")
         try data.write(to: url, options: .atomic)
@@ -120,7 +127,7 @@ struct DreeveAPIClient: Sendable {
         payload.append(Data("Content-Type: \(mime)\r\n\r\n".utf8))
         payload.append(data)
         payload.append(Data("\r\n--\(boundary)--\r\n".utf8))
-        let (responseData, response) = try await URLSession.shared.upload(for: request, from: payload)
+        let (responseData, response) = try await urlSession.upload(for: request, from: payload)
         try check(response, data: responseData)
         return try JSONDecoder().decode(T.self, from: responseData)
     }

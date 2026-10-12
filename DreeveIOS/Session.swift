@@ -145,6 +145,11 @@ final class DreeveSession: ObservableObject {
         return try await client.fileImports().fileImports
     }
 
+    func gear() async throws -> [DreeveGear] {
+        guard let client else { throw APIError.notConfigured }
+        return try await client.gear()
+    }
+
     func gpx(_ id: String) async throws -> URL {
         guard let client else { throw APIError.notConfigured }
         return try await client.downloadGPX(id)
