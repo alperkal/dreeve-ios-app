@@ -2,6 +2,14 @@
 
 A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dreeve HTTP API v1 at https://docs.dreeve.app/api/.
 
+## Screenshots
+
+Captured from the iPhone 17 simulator using demo activity data. Goals are saved locally in this build.
+
+| Overview | Goals | Create a goal |
+| --- | --- | --- |
+| <img src="docs/screenshots/overview.png" alt="Overview with two favorite goals and weekly activity totals" width="250"> | <img src="docs/screenshots/goals.png" alt="Goals list with favorite selection and weekly and monthly progress" width="250"> | <img src="docs/screenshots/create-goal.png" alt="Goal editor with sport, metric, frequency and target fields" width="250"> |
+
 ## Features included
 
 - Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Health sync, Upload, Settings.
