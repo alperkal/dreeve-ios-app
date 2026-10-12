@@ -8,3 +8,5 @@ swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift "$test_dir/ma
 "$test_dir/models"
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/APIClient.swift DreeveIOSTests/GearContractTest.swift -o "$test_dir/gear"
 "$test_dir/gear"
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/APIClient.swift DreeveIOS/HealthSyncCore.swift DreeveIOSTests/HealthSyncContractTest.swift -o "$test_dir/health"
+"$test_dir/health"

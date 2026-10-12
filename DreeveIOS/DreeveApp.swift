@@ -3,11 +3,13 @@ import SwiftUI
 @main
 struct DreeveApp: App {
     @StateObject private var session = DreeveSession()
+    @StateObject private var healthSync = HealthSyncStore()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(session)
+                .environmentObject(healthSync)
                 .preferredColorScheme(.dark)
         }
     }
@@ -24,6 +26,8 @@ struct RootView: View {
                         .tabItem { Label("Overview", systemImage: "chart.bar.xaxis") }
                     ActivitiesView()
                         .tabItem { Label("Activities", systemImage: "figure.run") }
+                    HealthSyncView()
+                        .tabItem { Label("Health sync", systemImage: "heart") }
                     UploadView()
                         .tabItem { Label("Upload", systemImage: "square.and.arrow.up") }
                     NavigationStack { SettingsView() }

@@ -27,6 +27,11 @@ final class DreeveSession: ObservableObject {
         isConfigured = client != nil
     }
 
+    func configuredClient() throws -> DreeveAPIClient {
+        guard let client else { throw APIError.notConfigured }
+        return client
+    }
+
     func connect(address: String, key: String) async throws {
         let url = try DreeveAPIClient.validatedURL(address)
         let token = key.trimmingCharacters(in: .whitespacesAndNewlines)

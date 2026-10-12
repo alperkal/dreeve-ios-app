@@ -20,6 +20,10 @@
 		B694A5D5B8BFE1A10222CC3D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C138BEAD3976A020207BBB96 /* SettingsView.swift */; };
 		E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF1376147E58909AAA77389 /* ActivityDetailView.swift */; };
 		F21E29704BF3DB287740DA93 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D630ADBBEA7FFCED795502 /* Session.swift */; };
+		E945A32AE48C32F262F4329D /* HealthSyncCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */; };
+		4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */; };
+		3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831CCA044730B4857B49325A /* HealthSyncStore.swift */; };
+		ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +41,10 @@
 		CDF1376147E58909AAA77389 /* ActivityDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDetailView.swift; sourceTree = "<group>"; };
 		D07B68E143C56935BEFD76F9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D48327B073CAD0CAA6233C59 /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
+		10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncCore.swift; sourceTree = "<group>"; };
+		8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthReader.swift; sourceTree = "<group>"; };
+		831CCA044730B4857B49325A /* HealthSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncStore.swift; sourceTree = "<group>"; };
+		224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +77,10 @@
 		DD48BDD2E20000D9CE524826 /* DreeveIOS */ = {
 			isa = PBXGroup;
 			children = (
+				10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */,
+				8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */,
+				831CCA044730B4857B49325A /* HealthSyncStore.swift */,
+				224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */,
 				99609C103905761AB1D0C685 /* APIClient.swift */,
 				6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */,
 				CDF1376147E58909AAA77389 /* ActivityDetailView.swift */,
@@ -117,6 +129,7 @@
 				TargetAttributes = {
 					0E8A3AD980EC179856012B7E = {
 						CreatedOnToolsVersion = 16.0;
+                        SystemCapabilities = { com.apple.HealthKit = { enabled = 1; }; };
 					};
 				};
 			};
@@ -165,6 +178,10 @@
 				F21E29704BF3DB287740DA93 /* Session.swift in Sources */,
 				B694A5D5B8BFE1A10222CC3D /* SettingsView.swift in Sources */,
 				9728FCF5BFD75018EDD71EE1 /* Theme.swift in Sources */,
+				E945A32AE48C32F262F4329D /* HealthSyncCore.swift in Sources */,
+				4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */,
+				3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */,
+				ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */,
 				763B4753E5969A2669455022 /* UploadView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -176,6 +193,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
+                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync their summaries, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -244,6 +263,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
+                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync their summaries, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

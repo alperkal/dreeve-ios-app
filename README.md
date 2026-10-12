@@ -4,7 +4,7 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 
 ## Features included
 
-- Native dark-themed SwiftUI tab navigation: Overview, Activities, Upload, Settings.
+- Native dark-themed SwiftUI tab navigation: Overview, Activities, Health sync, Upload, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
@@ -45,7 +45,7 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 - There is **no documented manual JSON activity creation endpoint**. “Post” means upload an existing FIT / TCX / GPX file. Live GPS activity recording or HealthKit sync need client development and/or suitable import support.
 - There is **no documented insights endpoint** in the reviewed HTTP API. Dashboard analytics are computed client-side from the previous 30 days. The list endpoint supports 100 items/page, so the dashboard requests each page in the period. This may be slow for large instances.
 - No built-in social feed, follow relationships, kudos, or account-based login in the documented API. An API key gives server-level access and must **not** be hardcoded in a publicly distributed app. For multi-user App Store distribution, add per-user authentication and authorization server-side.
-- No offline database, background sync, push notifications, or HealthKit integration yet.
+- No general offline activity database, background sync, or push notifications yet. Apple Health sync runs manually in the foreground.
 - Photo viewing through static image URLs depends on whether the server permits those URLs to load without an authenticated cookie.
 - The updated project builds for the generic iOS Simulator destination in Xcode. Interactive simulator operation and a live authenticated Dreeve integration test remain unverified.
 
@@ -106,3 +106,23 @@ Live instance checks still needed: open an activity with assigned gear, select a
 The configured `AppIcon` asset uses the official Dreeve mark with its orange color preserved, a navy (`#09101c`) background, and navy negative space. This dark design is the default on iOS 17 and later and is also explicitly registered for the iOS dark appearance. The icon is opaque and square; iOS supplies corner masking. Xcode derives device icon sizes from the 1024 × 1024 source.
 
 `Branding/` contains the unchanged official SVG plus editable SVG and opaque PNG versions for both white and navy backgrounds. The white version is available as an alternative; the navy version is assigned to the app. Source: [official Dreeve logo](https://raw.githubusercontent.com/dreeveapp/dreeve/master/public/assets/images/logo.svg).
+
+## Manual Apple Health synchronization
+
+Use the **Health sync** tab, choose a starting date, choose whether to include routes and heart rate, and tap **Load Apple Health workouts**. Grant read access through Apple's permission sheet. Select individual workouts, then tap **Sync selected** and confirm the destination server. The app requests no HealthKit write permission and does not modify or delete your original Health records.
+
+Each chosen workout becomes an in-memory TCX upload to the existing Dreeve API. Workouts without GPS also export. Available distance and calorie totals are included; enabled routes and heart-rate samples are included when readable. Names of recording sources are preserved as device names. Garmin's standard Running/Biking/Other sport values are used in the TCX, then the original mapped sport is restored through Dreeve's activity PATCH endpoint after import succeeds. Refresh status to complete this step and link the returned activity ID. Imported or manually linked activities show their Apple Health source and original duration in activity details.
+
+**Duplicates and recovery:** Filenames contain the original HealthKit workout UUID. A device-local journal, scoped to the server URL, records upload intent before sending. Queued and unconfirmed requests are not blindly repeated after restart. The app checks server history by exact filename and reviews existing activities near the original start time. Possible matches require explicit confirmation; selecting **Link this activity** creates a local association with no upload. If these are different workouts, explicitly allow a new upload. This is a heuristic check, not a global uniqueness guarantee: old exports may have different times/time zones, and different HealthKit records may describe the same workout. For unconfirmed network outcomes, refresh first; an explicit retry remains available with a duplicate warning. Failed imports can be selected again. Server-reported duplicate skips are shown separately from imported workouts.
+
+The journal contains HealthKit IDs, workout summaries, destination URLs, and activity links, never API tokens or raw GPS/heart-rate samples. It is stored in Application Support, excluded from backups, and protected with complete file protection on iOS. If the journal cannot be read or saved, uploads stop rather than lose duplicate tracking. Links are local to this installation; Dreeve has no HealthKit-ID field in its current public API. Deleting an activity in Dreeve does not delete it from Health or automatically upload it again.
+
+**Current limits:** Synchronization is one way (Health → Dreeve), manual, and runs while the app is open. A 202 response means queued, not imported. The server needs `IMPORT_MODE=files` and its normal file-processing job. Refresh status after that job runs. No automatic background delivery, propagation of later workout edits/deletions, lap splits, cadence, or power export is implemented. TCX stores active duration; Dreeve currently also interprets this value as elapsed duration, so paused workouts lose the distinction on the server. Time-only export markers bridge sparse recordings without inventing GPS or sensor readings, but speed and elevation metrics may differ from Apple's original metrics. Apple's HealthKit read privacy means an empty result can mean no workouts, limited history, or denied permission.
+
+**Verification for this update:** Xcode simulator build passed. Portable contract tests cover indoor and route/heart-rate TCX output, XML escaping, invalid workouts, UUID filenames, durable journal recovery and server separation, corrupt-journal detection, timezone-aware duplicate candidates, paginated filename-filter requests, and authenticated multipart uploads returning 202. The generated indoor fixture was also accepted by the official Dreeve XML reader and active-duration calculation. These are synthetic/mock tests; no real Health data was read and no live Dreeve records were modified.
+
+**Real-device checks required:** Enable HealthKit for your signing team's App ID/provisioning profile. Build and run on an iPhone with readable workouts, grant permission, sync a single indoor workout and a single outdoor workout, let Dreeve process them, refresh status, and inspect the summary, route, heart rate, sport, and local link. Repeat refresh/relaunch to confirm no second upload. Confirm or reject a match from the old importer, test optional data permissions, and test denied Health access and a server/network error. Successful compilation does not verify device HealthKit permissions or live import processing.
+
+Implementation: `AppleHealthReader.swift` (read-only HealthKit queries), `HealthSyncCore.swift` (TCX and journal), `HealthSyncStore.swift` (uploads/reconciliation), and `HealthSyncView.swift` (manual selection and review). Tests: `DreeveIOSTests/HealthSyncContractTest.swift`, included in `./run_tests.sh`.
+
+References: [Apple HealthKit authorization](https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data), [Dreeve file upload](https://docs.dreeve.app/api/operations/uploadactivityfile/), and [file import status](https://docs.dreeve.app/api/operations/listfileimports/).

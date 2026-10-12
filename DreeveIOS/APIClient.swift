@@ -92,8 +92,16 @@ struct DreeveAPIClient: Sendable {
         return try await upload(path: "activity/upload", data: data, filename: fileURL.lastPathComponent, mime: "application/octet-stream")
     }
 
-    func fileImports() async throws -> ImportPage {
-        try await perform(path: "file-imports", query: [URLQueryItem(name: "pagination[size]", value: "50")])
+    func uploadActivity(data: Data, filename: String) async throws -> UploadReceipt {
+        guard filename.lowercased().hasSuffix(".tcx") else { throw APIError.unsupportedFile }
+        return try await upload(path: "activity/upload", data: data, filename: filename, mime: "application/octet-stream")
+    }
+
+    func fileImports(page: Int = 1, size: Int = 50, filename: String? = nil) async throws -> ImportPage {
+        var query = [URLQueryItem(name: "pagination[page]", value: String(page)),
+                     URLQueryItem(name: "pagination[size]", value: String(size))]
+        if let filename { query.append(URLQueryItem(name: "filters[filename]", value: filename)) }
+        return try await perform(path: "file-imports", query: query)
     }
 
     func gear() async throws -> [DreeveGear] {

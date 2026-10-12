@@ -4,6 +4,7 @@ import UIKit
 
 struct ActivityDetailView: View {
     @EnvironmentObject private var session: DreeveSession
+    @EnvironmentObject private var healthSync: HealthSyncStore
     @Environment(\.dismiss) private var dismiss
     let activityID: String
 
@@ -66,6 +67,18 @@ struct ActivityDetailView: View {
                                 .disabled(!session.canUpload || isBusy)
                             if !session.canUpload {
                                 Text("Changing gear requires Dreeve file import mode.").font(.caption)
+                            }
+                        }
+                    }
+                    if let healthWorkout = healthSync.linkedWorkout(activityID: activity.id, server: session.serverAddress) {
+                        SurfaceCard {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Label("Linked Apple Health workout", systemImage: "heart.fill")
+                                    .font(.headline).foregroundStyle(DreeveTheme.accent)
+                                Text(healthWorkout.source).font(.subheadline)
+                                Text(healthWorkout.start.formatted(date: .abbreviated, time: .shortened))
+                                Text("\(Int(healthWorkout.duration / 60)) min recorded in Apple Health")
+                                    .font(.caption).foregroundStyle(DreeveTheme.muted)
                             }
                         }
                     }
