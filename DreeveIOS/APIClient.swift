@@ -57,14 +57,37 @@ struct DreeveAPIClient: Sendable {
 
     func status() async throws -> DreeveStatus { try await perform(path: "status") }
 
-    func activities(page: Int = 1, size: Int = 25, from: String? = nil, sport: String? = nil) async throws -> ActivityPage {
+    func activities(page: Int = 1, size: Int = 25, from: String? = nil, to: String? = nil, sport: String? = nil) async throws -> ActivityPage {
         var query = [
             URLQueryItem(name: "pagination[page]", value: String(page)),
             URLQueryItem(name: "pagination[size]", value: String(size))
         ]
         if let from { query.append(URLQueryItem(name: "filters[from]", value: from)) }
+        if let to { query.append(URLQueryItem(name: "filters[to]", value: to)) }
         if let sport { query.append(URLQueryItem(name: "filters[sportType]", value: sport)) }
         return try await perform(path: "activities", query: query)
+    }
+
+    /// Date filters are inclusive local calendar days; size is capped at 100 by v1.
+    func allGoalActivities(from: String, to: String) async throws -> [GoalActivity] {
+        var unique: [String: GoalActivity] = [:]
+        var page = 1
+        while true {
+            try Task.checkCancellation()
+            let result = try await activities(page: page, size: 100, from: from, to: to)
+            guard result.pagination.page == page, result.pagination.totalPages >= 0,
+                  !result.activities.isEmpty || page >= result.pagination.totalPages else {
+                throw APIError.decoding("Incomplete or invalid activity pagination; saved progress was kept.")
+            }
+            for activity in result.activities {
+                let value = try GoalActivity(activity)
+                // Newest-first API: preserve the first copy of overlapping page records.
+                if unique[value.id] == nil { unique[value.id] = value }
+            }
+            if page >= result.pagination.totalPages { break }
+            page += 1
+        }
+        return unique.values.sorted { $0.id < $1.id }
     }
 
     func activity(_ id: String) async throws -> DreeveActivity {

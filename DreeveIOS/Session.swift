@@ -15,6 +15,8 @@ final class DreeveSession: ObservableObject {
     @Published private(set) var didLoadInsights = false
     @Published var errorMessage: String?
 
+    let goalProgress = GoalProgressStore()
+
     private var page = 0
     private let pageSize = 25
     private var client: DreeveAPIClient? {
@@ -25,6 +27,7 @@ final class DreeveSession: ObservableObject {
     init() {
         serverAddress = UserDefaults.standard.string(forKey: "dreeve.url") ?? ""
         isConfigured = client != nil
+        if let client { goalProgress.selectInstance(GoalEngine.instanceID(client.baseURL)) }
     }
 
     func configuredClient() throws -> DreeveAPIClient {
@@ -46,6 +49,7 @@ final class DreeveSession: ObservableObject {
         let normalized = address.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         UserDefaults.standard.set(normalized, forKey: "dreeve.url")
         serverAddress = normalized
+        goalProgress.selectInstance(GoalEngine.instanceID(url))
         serverVersion = status.version
         canUpload = status.canUpload
         activities = []
@@ -57,6 +61,7 @@ final class DreeveSession: ObservableObject {
     }
 
     func disconnect() {
+        goalProgress.selectInstance("")
         KeychainStore.delete()
         UserDefaults.standard.removeObject(forKey: "dreeve.url")
         serverAddress = ""
@@ -120,6 +125,11 @@ final class DreeveSession: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    func refreshGoals() async {
+        guard let client else { return }
+        await goalProgress.refresh(client: client)
+    }
+
     func getActivity(_ id: String) async throws -> DreeveActivity {
         guard let client else { throw APIError.notConfigured }
         return try await client.activity(id)
@@ -130,6 +140,8 @@ final class DreeveSession: ObservableObject {
         let changed = try await client.editActivity(id, patch: patch)
         if let i = activities.firstIndex(where: { $0.id == id }) { activities[i] = changed }
         if let i = insightsActivities.firstIndex(where: { $0.id == id }) { insightsActivities[i] = changed }
+        goalProgress.changed(changed)
+        await refreshGoals()
         return changed
     }
 
@@ -138,16 +150,23 @@ final class DreeveSession: ObservableObject {
         try await client.deleteActivity(id)
         activities.removeAll { $0.id == id }
         insightsActivities.removeAll { $0.id == id }
+        goalProgress.changed(deletedID: id)
+        await refreshGoals()
     }
 
     func uploadActivity(_ url: URL) async throws -> UploadReceipt {
         guard let client else { throw APIError.notConfigured }
-        return try await client.uploadActivity(fileURL: url)
+        let receipt = try await client.uploadActivity(fileURL: url)
+        await refreshGoals()
+        return receipt
     }
 
     func imports() async throws -> [DreeveImport] {
         guard let client else { throw APIError.notConfigured }
-        return try await client.fileImports().fileImports
+        let imports = try await client.fileImports().fileImports
+        // The root foreground loop also catches completion when Upload is not visible.
+        await refreshGoals()
+        return imports
     }
 
     func gear() async throws -> [DreeveGear] {

@@ -4,6 +4,8 @@ import Charts
 struct DashboardView: View {
     @EnvironmentObject private var session: DreeveSession
 
+    @EnvironmentObject private var persistence: GoalPersistence
+
     private var insights: ActivityInsights { ActivityInsights(activities: session.insightsActivities) }
 
     var body: some View {
@@ -25,6 +27,8 @@ struct DashboardView: View {
                             .foregroundStyle(DreeveTheme.accent)
                     }
                     .padding(.top, 12)
+
+                    if persistence.container != nil { FavoriteGoalsView() }
 
                     Text("This week")
                         .font(.title3.weight(.bold))
@@ -115,7 +119,7 @@ struct DashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { Task { await session.refreshInsights() } } label: {
+                    Button { Task { await session.refreshInsights(); await session.refreshGoals() } } label: {
                         Image(systemName: "arrow.clockwise")
                     }
                     .disabled(session.isLoadingInsights)
@@ -127,9 +131,9 @@ struct DashboardView: View {
                 }
             }
             .task {
-                if !session.didLoadInsights { await session.refreshInsights() }
+                if !session.didLoadInsights { await session.refreshInsights(); await session.refreshGoals() }
             }
-            .refreshable { await session.refreshInsights() }
+            .refreshable { await session.refreshInsights(); await session.refreshGoals() }
             .alert("Request failed", isPresented: Binding(get: { session.errorMessage != nil }, set: { if !$0 { session.errorMessage = nil } })) {
                 Button("OK") { session.errorMessage = nil }
             } message: {

@@ -1,7 +1,16 @@
 from pathlib import Path
 import hashlib
+import json
+import subprocess
 r=Path(__file__).parent
 src=r/'DreeveIOS'
+# Preserve signing and build settings configured in Xcode when regenerating.
+saved_settings = {}
+project_file = r/'DreeveIOS.xcodeproj'/'project.pbxproj'
+if project_file.exists():
+    data = json.loads(subprocess.check_output(['plutil', '-convert', 'json', '-o', '-', str(project_file)]))
+    saved_settings = {key: value['buildSettings'] for key, value in data['objects'].items()
+                      if value.get('isa') == 'XCBuildConfiguration'}
 files=sorted(p.name for p in src.glob('*.swift'))
 assert len(files)>=10
 
@@ -54,6 +63,7 @@ for kind in ('project','target'):
                 'INFOPLIST_KEY_NSHealthShareUsageDescription':'"Choose Apple Health workouts to sync their summaries, optional routes and heart rate to your Dreeve server."',
                 'CODE_SIGN_STYLE':'Automatic',
                 'GENERATE_INFOPLIST_FILE':'YES',
+                'INFOPLIST_FILE':'DreeveIOS/Info.plist',
                 'INFOPLIST_KEY_UIApplicationSceneManifest_Generation':'YES',
                 'INFOPLIST_KEY_UILaunchScreen_Generation':'YES',
                 'IPHONEOS_DEPLOYMENT_TARGET':'17.0',
@@ -65,11 +75,13 @@ for kind in ('project','target'):
                 'SWIFT_EMIT_LOC_STRINGS':'YES',
                 'TARGETED_DEVICE_FAMILY':'1',
             }
+        for setting, value in saved_settings.get(uuid(key), {}).items():
+            settings[setting] = ('(' + ', '.join(json.dumps(item) for item in value) + ')') if isinstance(value, list) else json.dumps(value)
         kset=' '.join(f'{k} = {v};' for k,v in settings.items())
         add(key, f'isa = XCBuildConfiguration; buildSettings = {{ {kset} }}; name = {mode};')
     add('configs_'+kind, f'isa = XCConfigurationList; buildConfigurations = ( {uuid("config_"+kind+"_Debug")} /* Debug */, {uuid("config_"+kind+"_Release")} /* Release */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
 add('target', f'isa = PBXNativeTarget; buildConfigurationList = {uuid("configs_target")} /* Build configuration list for PBXNativeTarget "DreeveIOS" */; buildPhases = ( {uuid("phase_sources")} /* Sources */, {uuid("phase_frameworks")} /* Frameworks */, {uuid("phase_resources")} /* Resources */, ); buildRules = ( ); dependencies = ( ); name = DreeveIOS; productName = DreeveIOS; productReference = {uuid("file_Product")} /* DreeveIOS.app */; productType = "com.apple.product-type.application";')
-add('project', f'isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = {{ {uuid("target")} = {{ CreatedOnToolsVersion = 16.0; }}; }}; }}; buildConfigurationList = {uuid("configs_project")} /* Build configuration list for PBXProject "DreeveIOS" */; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base ); mainGroup = {uuid("group_root")}; productRefGroup = {uuid("group_products")} /* Products */; projectDirPath = ""; projectRoot = ""; targets = ( {uuid("target")} /* DreeveIOS */, );')
+add('project', f'isa = PBXProject; attributes = {{ BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1600; TargetAttributes = {{ {uuid("target")} = {{ CreatedOnToolsVersion = 16.0; SystemCapabilities = {{ com.apple.HealthKit = {{ enabled = 1; }}; }}; }}; }}; }}; buildConfigurationList = {uuid("configs_project")} /* Build configuration list for PBXProject "DreeveIOS" */; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = ( en, Base ); mainGroup = {uuid("group_root")}; productRefGroup = {uuid("group_products")} /* Products */; projectDirPath = ""; projectRoot = ""; targets = ( {uuid("target")} /* DreeveIOS */, );')
 pbx='''// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {};\n\tobjectVersion = 56;\n\tobjects = {\n'''+ '\n'.join(objects)+f'''\n\t}};\n\trootObject = {uuid('project')} /* Project object */;\n}}\n'''
 (r/'DreeveIOS.xcodeproj'/'project.pbxproj').write_text(pbx)
 print('Swift files:',len(files),'Project chars:',len(pbx))

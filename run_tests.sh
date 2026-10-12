@@ -6,7 +6,10 @@ trap 'rm -rf "$test_dir"' EXIT
 cp DreeveIOSTests/ModelSmokeTest.swift "$test_dir/main.swift"
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift "$test_dir/main.swift" -o "$test_dir/models"
 "$test_dir/models"
-swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/APIClient.swift DreeveIOSTests/GearContractTest.swift -o "$test_dir/gear"
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOSTests/GearContractTest.swift -o "$test_dir/gear"
 "$test_dir/gear"
-swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/APIClient.swift DreeveIOS/HealthSyncCore.swift DreeveIOSTests/HealthSyncContractTest.swift -o "$test_dir/health"
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOS/HealthSyncCore.swift DreeveIOSTests/HealthSyncContractTest.swift -o "$test_dir/health"
 "$test_dir/health"
+
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOS/GoalStore.swift DreeveIOSTests/GoalsContractTest.swift -o "$test_dir/goals"
+"$test_dir/goals"

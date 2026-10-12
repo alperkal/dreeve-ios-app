@@ -98,6 +98,7 @@ final class HealthSyncStore: ObservableObject {
             try await reconcile(client: session.configuredClient(), server: server)
             try ensureServer(session, server: server)
             await session.reloadActivities()
+            await session.refreshGoals()
         } catch { errorMessage = error.localizedDescription }
     }
 
@@ -156,6 +157,7 @@ final class HealthSyncStore: ObservableObject {
             try await reconcile(client: client, server: server)
             try ensureServer(session, server: server)
             await session.reloadActivities()
+            await session.refreshGoals()
         } catch { errorMessage = error.localizedDescription }
     }
 

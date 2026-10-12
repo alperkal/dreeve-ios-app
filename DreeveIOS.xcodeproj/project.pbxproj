@@ -24,6 +24,9 @@
 		4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */; };
 		3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831CCA044730B4857B49325A /* HealthSyncStore.swift */; };
 		ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */; };
+		896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */; };
+		071C886151785B474B8DA1FF /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0DFDF584F71302EE73BD52 /* GoalStore.swift */; };
+		E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +48,13 @@
 		8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthReader.swift; sourceTree = "<group>"; };
 		831CCA044730B4857B49325A /* HealthSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncStore.swift; sourceTree = "<group>"; };
 		224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncView.swift; sourceTree = "<group>"; };
+		40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalEngine.swift; sourceTree = "<group>"; };
+		FA0DFDF584F71302EE73BD52 /* GoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalStore.swift; sourceTree = "<group>"; };
+		544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
+		B62B3E47007F38142BBD13E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		53D7410056910A0F736E4321 /* DreeveIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS.entitlements; sourceTree = "<group>"; };
+		C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS-iCloud.entitlements; sourceTree = "<group>"; };
+		3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info-iCloud.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +87,13 @@
 		DD48BDD2E20000D9CE524826 /* DreeveIOS */ = {
 			isa = PBXGroup;
 			children = (
+				3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */,
+				C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */,
+				40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */,
+				FA0DFDF584F71302EE73BD52 /* GoalStore.swift */,
+				544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */,
+				B62B3E47007F38142BBD13E9 /* Info.plist */,
+				53D7410056910A0F736E4321 /* DreeveIOS.entitlements */,
 				10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */,
 				8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */,
 				831CCA044730B4857B49325A /* HealthSyncStore.swift */,
@@ -167,6 +184,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */,
+				071C886151785B474B8DA1FF /* GoalStore.swift in Sources */,
+				E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */,
 				B66496CAB75B3E11A7D6F9AC /* APIClient.swift in Sources */,
 				619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */,
 				E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */,
@@ -199,6 +219,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveIOS/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -269,6 +290,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveIOS/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

@@ -4,7 +4,7 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 
 ## Features included
 
-- Native dark-themed SwiftUI tab navigation: Overview, Activities, Health sync, Upload, Settings.
+- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Health sync, Upload, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
@@ -126,3 +126,53 @@ The journal contains HealthKit IDs, workout summaries, destination URLs, and act
 Implementation: `AppleHealthReader.swift` (read-only HealthKit queries), `HealthSyncCore.swift` (TCX and journal), `HealthSyncStore.swift` (uploads/reconciliation), and `HealthSyncView.swift` (manual selection and review). Tests: `DreeveIOSTests/HealthSyncContractTest.swift`, included in `./run_tests.sh`.
 
 References: [Apple HealthKit authorization](https://developer.apple.com/documentation/healthkit/authorizing-access-to-health-data), [Dreeve file upload](https://docs.dreeve.app/api/operations/uploadactivityfile/), and [file import status](https://docs.dreeve.app/api/operations/listfileimports/).
+
+
+
+## Weekly and monthly Goals (October 12, 2026)
+
+Create any number of independent recurring goals in the Goals tab. Each goal chooses an exact Dreeve sport type, activity count or distance, weekly or monthly frequency, and a positive target. Counts must be whole numbers. Distance is entered/displayed in kilometres and stored in metres. Tap a goal to edit it, swipe left to archive, or restore archived goals. Delete is available in the editor. Select Favorite 1 and Favorite 2 at the top of Goals; Overview shows only those selected slots. Concurrent favorite-slot conflicts are resolved deterministically in the UI.
+
+### Personal Team: local goals by default
+
+The default Debug/Release builds use `DreeveIOS.entitlements` without iCloud or Push Notifications and `Info.plist` with an empty `GoalCloudContainer`. Goals are persisted locally with SwiftData and keep working offline; they do not sync between devices. This removes the Personal Team provisioning failure introduced by the Goals update. Existing HealthKit support, signing team and bundle ID are preserved. Select your Personal Team, then build/run again. If Xcode still shows the old capability error, close/reopen the project and use Product → Clean Build Folder.
+
+Apple limits iCloud and Push Notifications provisioning to eligible developer-program teams. See [Apple's developer account overview](https://developer.apple.com/help/account/basics/about-your-developer-account).
+
+### Optional iCloud sync with an eligible paid team
+
+1. Select an Apple Developer Program team and a unique bundle ID.
+2. In the target's Build Settings, set **Code Signing Entitlements** (`CODE_SIGN_ENTITLEMENTS`) to `DreeveIOS/DreeveIOS-iCloud.entitlements` and **Info.plist File** (`INFOPLIST_FILE`) to `DreeveIOS/Info-iCloud.plist` for both Debug and Release. The separate default local files remain available when switching back to a Personal Team.
+3. In Signing & Capabilities, enable **iCloud → CloudKit**, **Push Notifications**, and **Background Modes → Remote notifications**. Create/select `iCloud.<your bundle ID>` in your developer account. If using another container, update the identifier in both optional iCloud files. These capabilities synchronize goal definitions; Dreeve activity progress still requires API refresh.
+4. Run signed builds on two devices using the same iCloud account and container. Verify goal creation/edit/archive and favorites on both. Sync is asynchronous; Goals displays account/sync status.
+5. Before TestFlight/App Store distribution, initialize the development CloudKit schema with a signed development run and deploy it to production in CloudKit Console. Keep the bundle/container identity stable.
+
+To return to local mode, restore the two default build-setting paths and remove the iCloud, Push Notifications and remote-notification Background Mode capabilities. Both modes use the same on-device goal database; changing mode does not clear goals.
+
+The simulator uses local SwiftData storage by default, because unsigned simulator builds can crash inside CloudKit when no entitlement is present. To test iCloud on a **properly signed and entitled simulator**, add `DREEVE_SIMULATOR_CLOUDKIT` to Swift Active Compilation Conditions. Do not add it to an unsigned build. Local device storage is already the default. Enabling the optional cloud files requires eligible signing even on a simulator. A recoverable container-opening failure attempts the same on-disk store without CloudKit; it never silently substitutes an empty memory database.
+
+Only goal definitions, archive state and favorite ranks enter the private CloudKit database. Instance scope is a SHA-256 hash of the normalized HTTPS deployment URL (host casing/default HTTPS port/trailing slashes normalized; subpaths preserved). The URL itself and API credentials are not stored in goal records. Tokens remain in Keychain. Reconnecting to the same deployment restores its goals; another deployment has a separate set. Dreeve's documented API key is instance-level, so this is deployment scoping, not user-account scoping.
+
+### Progress and calendar rules
+
+- Creation time is metadata, never an activity cutoff. A Thursday goal includes Monday–Thursday activity; editing sport/metric/frequency/target immediately recomputes against the whole current period.
+- Gregorian weeks run Monday 00:00 through the next Monday exclusively; months run from day 1 to the next month's day 1 exclusively. The device's current timezone determines **today** and therefore the active week/month. Activity membership uses the date portion of `startDateLocal`, preserving its recorded wall-clock date without converting timezone suffixes. Date arithmetic uses floating calendar components to avoid daylight-saving shifts.
+- The [activity search API](https://docs.dreeve.app/api/operations/listactivities/) documents inclusive `filters[from]`/`filters[to]` date filters, page numbers starting at 1, maximum page size 100, and `pagination.totalPages`. It does not explicitly specify the filter timezone. The app fetches one extra day at each end and applies the exact local-date period itself.
+- Fetch every page for the combined current week/month window. Deduplicate by activity ID. Replace the saved activity snapshot only when all pages and local-date parsing succeed; a failed later page cannot publish partial totals. Fresh snapshots remove remotely deleted activities and apply changed sport/date/distance. Snapshot APIs are not available, so simultaneous server changes across pagination are reconciled on subsequent refreshes.
+- Current-period values are computed on device. Distance sums nonnegative distances, and each matching activity counts once. One activity can contribute independently to several goals. Over-target values remain visible.
+- Refresh on app open/foreground, every 60 seconds while active, after edits/deletions/uploads, when import status is read, and with pull-to-refresh or Overview's refresh button. Upload acceptance is not completion: active polling picks up the eventual imported activity. In-flight results cannot overwrite local activity changes or cross instance switches.
+- Local derived activity snapshots are stored in the app's Caches directory, outside CloudKit and iCloud backup. Failed refreshes retain cached values and show the error plus last refresh time. Values become stale after five minutes or a period change. If the cache does not cover a new period, progress is shown as unavailable rather than a misleading zero. iOS may evict caches, requiring a network fetch; goal definitions remain in persistent SwiftData storage.
+- There is no Dreeve activity push integration or closed-app activity refresh. Foreground refresh reconciles imports/edits/deletions made elsewhere. Historical goal achievements are outside this version's scope.
+
+### Goal verification
+
+- Xcode 27 Debug simulator build: passed for arm64 and x86_64; unsigned simulator startup checked. Generic iPhone arm64 build also passed with signing disabled.
+- Standalone regression tests: original model and gear tests passed. New tests cover Monday/month/year boundaries, leap years, DST and travel, local timestamp suffixes, invalid dates, retroactive counting/distance, edits/deletions, duplicate IDs, all-page queries and later-page failures, 121 persistent goals, favorite-slot conflicts, archive exclusion, instance normalization/isolation, local offline snapshots, in-flight mutation/switch races, and cancelled foreground callers with a resumed refresh.
+- SwiftUI Overview, Goals list and goal editor rendered on an iPhone simulator using an isolated temporary fake-data build. The fixture is not included in the delivered app. An inherited card layout issue was corrected so metric labels and values stay together.
+- Live authenticated Dreeve operations and signed two-device CloudKit synchronization remain unverified; no real server records were changed. Follow the iCloud setup steps and verify a real activity edit/delete/import before relying on the app.
+
+New sources: `GoalEngine.swift` (calendar, scope, calculations), `GoalStore.swift` (SwiftData/CloudKit and local progress cache), `GoalsView.swift` (list/editor/favorites/status), `DreeveIOS.entitlements`, `Info.plist`. Goal tests run with `./run_tests.sh` on macOS 14+ and Xcode. They are standalone executables, not an XCTest target.
+
+Apple reference: [Syncing model data across a person's devices](https://developer.apple.com/documentation/swiftdata/syncing-model-data-across-a-persons-devices).
+
+The Goals feature was merged into the canonical repository with Apple Health sync, its HealthKit entitlement, API helpers and app icons preserved. Health import reconciliation also triggers goal refresh. On iPhone, the additional tab may place some screens in the system More menu.

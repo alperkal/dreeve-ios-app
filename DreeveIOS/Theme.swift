@@ -17,7 +17,7 @@ struct SurfaceCard<Content: View>: View {
     }
 
     var body: some View {
-        content
+        VStack(alignment: .leading, spacing: 0) { content }
             .padding(17)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DreeveTheme.surface, in: RoundedRectangle(cornerRadius: 20))
