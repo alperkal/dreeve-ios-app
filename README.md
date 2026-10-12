@@ -176,3 +176,27 @@ New sources: `GoalEngine.swift` (calendar, scope, calculations), `GoalStore.swif
 Apple reference: [Syncing model data across a person's devices](https://developer.apple.com/documentation/swiftdata/syncing-model-data-across-a-persons-devices).
 
 The Goals feature was merged into the canonical repository with Apple Health sync, its HealthKit entitlement, API helpers and app icons preserved. Health import reconciliation also triggers goal refresh. On iPhone, the additional tab may place some screens in the system More menu.
+
+## GitHub Actions: builds and releases
+
+`Build and test` runs on pull requests, pushes to `main`, and manually from Actions. It runs all standalone model/gear/Health/Goals tests, builds the shared `DreeveIOS` scheme for iPhone and Simulator, and uploads downloadable packages plus test/build logs. It uses GitHub's `macos-26` runner and its default Xcode; toolchain versions are recorded in the log. Builds are unsigned and use the existing local-goal configuration, with no Apple signing secrets required.
+
+`Release` runs when a version tag is pushed, for example:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Commit and push the workflow files first. Tags must have the form `v1.2.3` or `v1.2.3-beta.1`. The release workflow calls the same verified build in Release configuration, sets the app version from the tag and build number from the workflow run, then publishes a GitHub release after checking package checksums. Prerelease tags produce prereleases. Existing releases are not overwritten; re-running a publish job for an already published tag will fail rather than replacing its assets.
+
+Release assets:
+
+- `DreeveIOS-project.zip`: tracked Xcode project/source at the exact tagged commit, ready to open and sign in Xcode.
+- `DreeveIOS-simulator.zip`: compiled `.app` for the runner's iOS Simulator SDK/architecture; install in a compatible simulator using `xcrun simctl install booted DreeveIOS.app`.
+- `DreeveIOS-unsigned.ipa`: compiled iPhone Release app in a Payload ZIP. It requires your own signing/provisioning before installation. It cannot be installed directly and is not a TestFlight/App Store distribution.
+- `SHA256SUMS.txt`: checksums for the three packages.
+
+Only the publish job has `contents: write`; pull-request and build jobs have read-only access. Official GitHub Actions are pinned to verified commit IDs. The repository must allow GitHub Actions and the workflow's release job token to write releases. No API keys, Apple certificates, personal provisioning profiles or iCloud credentials are included.
+
+To reproduce a build locally, run `bash scripts/ci_build.sh Debug /tmp/dreeve-ci` (or `Release`). This runs tests and both builds, records logs, and packages the currently committed source. GitHub execution has to be verified after these files are pushed; local validation cannot establish the hosted runner's result.

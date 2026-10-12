@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verify and build release
+    uses: ./.github/workflows/build.yml
+    with:
+      configuration: Release
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Download verified release packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dreeve-${{ github.sha }}-Release
+          path: dist
+      - name: Verify package checksums
+        working-directory: dist
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Publish release with assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<'NOTES'
+          Includes the Xcode source project, an iOS Simulator app, an unsigned iPhone IPA, and SHA-256 checksums.
+
+          The IPA must be signed with your own Apple development identity before installation. It is not an App Store or TestFlight build. The default app stores goals locally and does not require iCloud or Push Notifications capabilities.
+          NOTES
+          flags=()
+          if [[ "$RELEASE_TAG" == *-* ]]; then
+            flags+=(--prerelease --latest=false)
+          fi
+          gh release create "$RELEASE_TAG" dist/DreeveIOS-project.zip dist/DreeveIOS-simulator.zip dist/DreeveIOS-unsigned.ipa dist/SHA256SUMS.txt \
+            --verify-tag --title "Dreeve iOS $RELEASE_TAG" --generate-notes --notes-file release-notes.md "${flags[@]}"
