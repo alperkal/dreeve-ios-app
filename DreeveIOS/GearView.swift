@@ -172,6 +172,39 @@ struct GearImageButton: View {
     }
 }
 
+/// A read-only preview of the locally selected picture for the current instance.
+struct GearThumbnail: View {
+    @EnvironmentObject private var progress: GoalProgressStore
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var image: UIImage?
+    let gearID: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(image == nil ? DreeveTheme.elevated : Color.white)
+            if let image {
+                Image(uiImage: image).resizable().scaledToFit().padding(2)
+            } else {
+                RunningShoeGlyph().padding(9).foregroundStyle(DreeveTheme.accent)
+            }
+        }
+        .frame(width: 44, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityHidden(true)
+        .task(id: progress.instanceID + "|" + gearID) { reload() }
+        .onAppear { reload() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { reload() }
+        }
+    }
+
+    private func reload() {
+        image = (try? GearImageCache().load(instanceID: progress.instanceID, gearID: gearID))
+            .flatMap { UIImage(data: $0) }
+    }
+}
+
 /// A running-shoe placeholder that does not depend on newer SF Symbols versions.
 private struct RunningShoeGlyph: View {
     var body: some View {

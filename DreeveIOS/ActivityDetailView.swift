@@ -226,7 +226,10 @@ struct GearSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(gear.name).font(.headline)
+            HStack(spacing: 10) {
+                GearThumbnail(gearID: gear.id)
+                Text(gear.name).font(.headline)
+            }
             Text("\(gear.type.capitalized)\(gear.isRetired == true ? " · Retired" : "")")
                 .font(.caption).foregroundStyle(DreeveTheme.muted)
             if let distance = gear.distanceInMeter {
