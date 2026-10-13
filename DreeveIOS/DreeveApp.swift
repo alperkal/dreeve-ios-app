@@ -39,6 +39,8 @@ struct RootView: View {
                         .tabItem { Label("Activities", systemImage: "figure.run") }
                     GoalsView()
                         .tabItem { Label("Goals", systemImage: "target") }
+                    GearView()
+                        .tabItem { Label("Gear", systemImage: "shoeprints.fill") }
                     HealthSyncView()
                         .tabItem { Label("Health sync", systemImage: "heart") }
                     UploadView()

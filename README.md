@@ -16,7 +16,7 @@ Captured from the iPhone 17 simulator using demo activity data. Goals are saved 
 
 ## Features included
 
-- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Health sync, Upload, Settings.
+- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Gear, Health sync, Upload, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
@@ -212,3 +212,24 @@ Release assets:
 Only the publish job has `contents: write`; pull-request and build jobs have read-only access. Official GitHub Actions are pinned to verified commit IDs. The repository must allow GitHub Actions and the workflow's release job token to write releases. No API keys, Apple certificates, personal provisioning profiles or iCloud credentials are included.
 
 To reproduce a build locally, run `bash scripts/ci_build.sh Debug /tmp/dreeve-ci` (or `Release`). This runs tests and both builds, records logs, and packages the currently committed source. GitHub execution has to be verified after these files are pushed; local validation cannot establish the hosted runner's result.
+
+## Gear screen and pictures
+
+The Gear screen lists active and retired gear, distance and activity counts. Each row starts with a running-shoe symbol in a rounded tile. The arrow opens an Activities screen filtered by that gear; Activities also has a gear-filter menu and text search matches loaded gear names.
+
+Dreeve's website supports gear filtering, but the current public v1 API only exposes date/sport/GPX filters. The app therefore scans every activity page (100/page), compares the full `gearId`, and removes duplicate activity IDs. This includes older workouts even when the first page has no matches. Loading/error states are shown; failed refreshes retain previously loaded matches. See [the public filter implementation](https://github.com/dreeveapp/dreeve/blob/master/src/Domain/Activity/Search/ActivitySearchFilters.php).
+
+To choose a picture:
+
+1. Tap the tile once to show the unlock symbol.
+2. Tap again to search SearXNG for the gear name plus `running shoe product photo` using `categories=images&format=json`. A loading indicator covers the tile while searching/downloading.
+3. The first usable HTTPS image is displayed. During the visible 10-second countdown, tap again to try the next result from that same search. Each displayed replacement gets a new 10-second countdown.
+4. Leave the picture for 10 seconds to accept it. A later session requires unlock, then a second tap starts a fresh search from the first result.
+
+The endpoint defaults to `https://search.home.alperkal.com/search`; change it under Settings → Gear image search. The instance must permit JSON search responses (`search.formats` includes `json`). The supplied endpoint was checked with a generic image query and returned HTTP 200 JSON on October 13, 2026. No real Dreeve activity/gear assignments were changed.
+
+Image selection keeps SearXNG's result order, tries a result's HTTPS thumbnail if the original cannot load, and skips unsupported/broken images. When results run out or a request fails, the current picture is retained with an explanation. Network requests use a separate ephemeral session, no Dreeve bearer token, no cookie storage and no URL cache. Search responses are limited to 4 MB and image downloads to 12 MB; supported images are downsampled to a centered 512×512 PNG with aspect-fit padding. Uniform light product-photo margins are trimmed when possible; complex photo backgrounds keep the full image.
+
+Pictures are stored in Application Support, separately from SwiftData/CloudKit and excluded from iCloud backup. The filename hashes both the Dreeve instance and gear ID. There is exactly one cached image per gear/instance: atomic replacement removes the previous file contents only after a new image is ready. Existing pictures load locally without another search. The last displayed picture is retained if you close the app during selection. A brief navigation away keeps the countdown; pending downloads are cancelled when leaving the screen or backgrounding the app.
+
+Verification includes portable tests for the two-tap state machine, 10-second expiry/restart, ordered SearXNG decoding, request query/auth isolation, errors and size limits, cache replacement/relaunch/instance isolation, and full-history gear filtering with duplicate/stale IDs. Simulator checks verify subject centering and the actual image-download/cache/countdown flow. The portable tests run through `run_tests.sh` and therefore also run in GitHub Actions. Simulator-specific image-processing checks were run separately in an isolated temporary QA app; fixture data is not shipped.

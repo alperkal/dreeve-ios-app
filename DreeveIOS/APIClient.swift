@@ -68,6 +68,27 @@ struct DreeveAPIClient: Sendable {
         return try await perform(path: "activities", query: query)
     }
 
+    /// Public v1 has no gear filter. Read every page and match complete gear IDs locally.
+    func activitiesForGear(_ gearID: String) async throws -> [DreeveActivity] {
+        var matches: [DreeveActivity] = []
+        var seen = Set<String>()
+        var next = 1
+        while true {
+            try Task.checkCancellation()
+            let result = try await activities(page: next, size: 100)
+            guard result.pagination.page == next, result.pagination.totalPages >= 0,
+                  !result.activities.isEmpty || next >= result.pagination.totalPages else {
+                throw APIError.decoding("Incomplete activity history. Pull to refresh and try again.")
+            }
+            for activity in result.activities where seen.insert(activity.id).inserted {
+                if activity.gearId == gearID { matches.append(activity) }
+            }
+            if next >= result.pagination.totalPages { break }
+            next += 1
+        }
+        return matches
+    }
+
     /// Date filters are inclusive local calendar days; size is capped at 100 by v1.
     func allGoalActivities(from: String, to: String) async throws -> [GoalActivity] {
         var unique: [String: GoalActivity] = [:]

@@ -27,6 +27,9 @@
 		896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */; };
 		071C886151785B474B8DA1FF /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0DFDF584F71302EE73BD52 /* GoalStore.swift */; };
 		E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */; };
+		90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF55C725D1FA70F2341A273 /* GearImageCore.swift */; };
+		8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C5EAE17E9C252107C515A /* GearImageStore.swift */; };
+		73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +58,9 @@
 		53D7410056910A0F736E4321 /* DreeveIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS.entitlements; sourceTree = "<group>"; };
 		C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS-iCloud.entitlements; sourceTree = "<group>"; };
 		3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info-iCloud.plist; sourceTree = "<group>"; };
+		BCF55C725D1FA70F2341A273 /* GearImageCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageCore.swift; sourceTree = "<group>"; };
+		620C5EAE17E9C252107C515A /* GearImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageStore.swift; sourceTree = "<group>"; };
+		3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +93,9 @@
 		DD48BDD2E20000D9CE524826 /* DreeveIOS */ = {
 			isa = PBXGroup;
 			children = (
+				3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */,
+				620C5EAE17E9C252107C515A /* GearImageStore.swift */,
+				BCF55C725D1FA70F2341A273 /* GearImageCore.swift */,
 				3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */,
 				C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */,
 				40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */,
@@ -184,6 +193,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */,
+				8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */,
+				90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */,
 				896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */,
 				071C886151785B474B8DA1FF /* GoalStore.swift in Sources */,
 				E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */,

@@ -117,6 +117,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                GearImageSearchSettingsView()
                 if let notice {
                     Label(notice, systemImage: "checkmark.circle")
                         .foregroundStyle(DreeveTheme.accent)
