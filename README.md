@@ -226,7 +226,7 @@ To choose a picture:
 3. The first usable HTTPS image is displayed. During the visible 10-second countdown, tap again to try the next result from that same search. Each displayed replacement gets a new 10-second countdown.
 4. Leave the picture for 10 seconds to accept it. A later session requires unlock, then a second tap starts a fresh search from the first result.
 
-The endpoint defaults to `https://search.home.alperkal.com/search`; change it under Settings → Gear image search. The instance must permit JSON search responses (`search.formats` includes `json`). The supplied endpoint was checked with a generic image query and returned HTTP 200 JSON on October 13, 2026. No real Dreeve activity/gear assignments were changed.
+No search endpoint is preconfigured. Enter your own HTTPS SearXNG search URL under Settings → Gear image search (for example, `https://search.example.com/search`). The instance must permit JSON search responses (`search.formats` includes `json`). The URL is stored only in local app preferences.
 
 Image selection keeps SearXNG's result order, tries a result's HTTPS thumbnail if the original cannot load, and skips unsupported/broken images. When results run out or a request fails, the current picture is retained with an explanation. Network requests use a separate ephemeral session, no Dreeve bearer token, no cookie storage and no URL cache. Search responses are limited to 4 MB and image downloads to 12 MB; supported images are downsampled to a centered 512×512 PNG with aspect-fit padding. Uniform light product-photo margins are trimmed when possible; complex photo backgrounds keep the full image.
 

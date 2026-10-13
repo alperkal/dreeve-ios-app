@@ -71,7 +71,7 @@ enum GearImageError: LocalizedError {
 }
 
 struct GearImageSearchClient: Sendable {
-    static let defaultEndpoint = "https://search.home.alperkal.com/search"
+    static let defaultEndpoint = ""
     let urlSession: URLSession
 
     init(urlSession: URLSession? = nil) {
