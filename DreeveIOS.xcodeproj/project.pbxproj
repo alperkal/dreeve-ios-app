@@ -30,6 +30,7 @@
 		90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF55C725D1FA70F2341A273 /* GearImageCore.swift */; };
 		8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C5EAE17E9C252107C515A /* GearImageStore.swift */; };
 		73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */; };
+		51DD18F2EFF4BB08CC2F11C1 /* HealthFITExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +62,7 @@
 		BCF55C725D1FA70F2341A273 /* GearImageCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageCore.swift; sourceTree = "<group>"; };
 		620C5EAE17E9C252107C515A /* GearImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageStore.swift; sourceTree = "<group>"; };
 		3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearView.swift; sourceTree = "<group>"; };
+		B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthFITExporter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +95,7 @@
 		DD48BDD2E20000D9CE524826 /* DreeveIOS */ = {
 			isa = PBXGroup;
 			children = (
+				B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */,
 				3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */,
 				620C5EAE17E9C252107C515A /* GearImageStore.swift */,
 				BCF55C725D1FA70F2341A273 /* GearImageCore.swift */,
@@ -193,6 +196,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				51DD18F2EFF4BB08CC2F11C1 /* HealthFITExporter.swift in Sources */,
 				73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */,
 				8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */,
 				90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */,

@@ -19,7 +19,7 @@ struct HealthSyncView: View {
                     SurfaceCard {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Apple Health → Dreeve", systemImage: "heart.fill").font(.title2.bold())
-                            Text("Choose the workouts you want to sync. Apple Health is read only; Dreeve edits and deletions stay in Dreeve.")
+                            Text("Choose workouts to send as FIT files. Apple Health is read only; Dreeve edits and deletions stay in Dreeve.")
                                 .font(.subheadline).foregroundStyle(DreeveTheme.muted)
                             DatePicker("Workouts since", selection: $from, in: ...Date.now, displayedComponents: .date)
                             Toggle("Include workout routes", isOn: $includeRoutes)

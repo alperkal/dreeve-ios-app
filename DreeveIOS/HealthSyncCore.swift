@@ -11,7 +11,9 @@ struct HealthWorkoutSummary: Codable, Identifiable {
     let source: String
     let timeZoneIdentifier: String
 
-    var filename: String { "apple-health-\(id.uuidString.lowercased()).tcx" }
+    var filename: String { "apple-health-\(id.uuidString.lowercased()).fit" }
+    var legacyFilename: String { "apple-health-\(id.uuidString.lowercased()).tcx" }
+    var importFilenames: [String] { [filename, legacyFilename] }
 }
 
 struct HealthTrackpoint {
@@ -20,75 +22,7 @@ struct HealthTrackpoint {
     var longitude: Double? = nil
     var altitude: Double? = nil
     var heartRate: Int? = nil
-}
-
-enum HealthTCXExporter {
-    static func data(workout: HealthWorkoutSummary, samples: [HealthTrackpoint]) throws -> Data {
-        let elapsed = workout.end.timeIntervalSince(workout.start)
-        guard elapsed > 0, elapsed <= 7 * 86400, workout.duration > 0,
-              workout.duration.isFinite, workout.duration <= elapsed + 1 else {
-            throw HealthSyncError.invalidWorkout
-        }
-        // Time-only markers let Dreeve import indoor workouts and sparse recordings.
-        // These markers contain no invented GPS, heart rate, or distance readings.
-        var points: [Double: HealthTrackpoint] = [:]
-        for offset in stride(from: 0.0, to: elapsed, by: 30.0) {
-            points[offset] = HealthTrackpoint(date: workout.start.addingTimeInterval(offset))
-        }
-        points[elapsed] = HealthTrackpoint(date: workout.end)
-        for point in samples where point.date >= workout.start && point.date <= workout.end {
-            let offset = point.date.timeIntervalSince(workout.start)
-            var existing = points[offset] ?? HealthTrackpoint(date: point.date)
-            if let latitude = point.latitude, let longitude = point.longitude,
-               latitude.isFinite, longitude.isFinite, abs(latitude) <= 90, abs(longitude) <= 180 {
-                existing.latitude = latitude
-                existing.longitude = longitude
-                existing.altitude = point.altitude.flatMap { $0.isFinite ? $0 : nil }
-            }
-            if let heartRate = point.heartRate, heartRate > 0 { existing.heartRate = heartRate }
-            points[offset] = existing
-        }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        func timestamp(_ date: Date) -> String { formatter.string(from: date) }
-        func number(_ value: Double) -> String { String(format: "%.3f", locale: Locale(identifier: "en_US_POSIX"), value) }
-        let distance = workout.distance.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
-        let tcxSport = workout.sportType == "Run" || workout.sportType == "VirtualRun" ? "Running" :
-            (workout.sportType == "Ride" || workout.sportType == "VirtualRide" ? "Biking" : "Other")
-        var track = ""
-        for offset in points.keys.sorted() {
-            let point = points[offset]!
-            track += "<Trackpoint><Time>\(timestamp(point.date))</Time>"
-            if let latitude = point.latitude, let longitude = point.longitude {
-                track += "<Position><LatitudeDegrees>\(number(latitude))</LatitudeDegrees><LongitudeDegrees>\(number(longitude))</LongitudeDegrees></Position>"
-            }
-            if let altitude = point.altitude { track += "<AltitudeMeters>\(number(altitude))</AltitudeMeters>" }
-            // Known workout distance at its boundaries only; don't fabricate a distance stream.
-            if let distance, offset == 0 || offset == elapsed {
-                track += "<DistanceMeters>\(number(offset == 0 ? 0 : distance))</DistanceMeters>"
-            }
-            if let heartRate = point.heartRate { track += "<HeartRateBpm><Value>\(heartRate)</Value></HeartRateBpm>" }
-            track += "</Trackpoint>"
-        }
-        let calories = workout.calories.flatMap { $0.isFinite && $0 >= 0 && $0 < Double(Int.max) ? Int($0.rounded()) : nil }
-        let xml = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-          <Activities><Activity Sport="\(tcxSport)"><Id>\(timestamp(workout.start))</Id>
-          <Lap StartTime="\(timestamp(workout.start))"><TotalTimeSeconds>\(number(workout.duration))</TotalTimeSeconds><DistanceMeters>\(number(distance ?? 0))</DistanceMeters>\(calories.map { "<Calories>\($0)</Calories>" } ?? "")<Intensity>Active</Intensity><TriggerMethod>Manual</TriggerMethod><Track>\(track)</Track></Lap>
-          <Notes>Apple Health workout \(workout.id.uuidString)</Notes>
-          <Creator xsi:type="Device_t"><Name>\(escape(workout.source))</Name><UnitId>0</UnitId><ProductID>0</ProductID><Version><VersionMajor>1</VersionMajor><VersionMinor>0</VersionMinor><BuildMajor>0</BuildMajor><BuildMinor>0</BuildMinor></Version></Creator>
-          </Activity></Activities>
-        </TrainingCenterDatabase>
-        """
-        return Data(xml.utf8)
-    }
-
-    private static func escape(_ value: String) -> String {
-        value.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&apos;")
-    }
+    var speed: Double? = nil
 }
 
 enum HealthSyncState: String, Codable {
@@ -111,6 +45,10 @@ struct HealthSyncRecord: Codable, Identifiable {
     var state: HealthSyncState
     var activityID: String?
     var message: String?
+    // Old journal entries omitted this field and used TCX. Keep their exact import
+    // filename during reconciliation; new uploads explicitly record the FIT name.
+    var uploadFilename: String? = nil
+    var filename: String { uploadFilename ?? workout.legacyFilename }
     var id: String { server + "|" + workout.id.uuidString }
 }
 
@@ -139,6 +77,32 @@ final class HealthSyncLedger {
         values.isExcludedFromBackup = true
         try excludedURL.setResourceValues(values)
         records = next
+    }
+}
+
+enum HealthImportHistory {
+    static func find(client: DreeveAPIClient, filenames: [String]) async throws -> DreeveImport? {
+        var latestFailure: DreeveImport?
+        for filename in filenames {
+            var page = 1
+            while true {
+                try Task.checkCancellation()
+                let result = try await client.fileImports(page: page, size: 100, filename: filename)
+                guard result.pagination.page == page,
+                      !result.fileImports.isEmpty || page >= result.pagination.totalPages else {
+                    throw APIError.decoding("Incomplete import history. Refresh status before retrying.")
+                }
+                // Server filename filtering is substring-based. Exhaust pages and prefer
+                // any accepted import over a newer failed attempt of the same filename.
+                for item in result.fileImports where item.filename == filename {
+                    if item.status != "failed" { return item }
+                    if latestFailure == nil { latestFailure = item }
+                }
+                if page >= result.pagination.totalPages { break }
+                page += 1
+            }
+        }
+        return latestFailure
     }
 }
 

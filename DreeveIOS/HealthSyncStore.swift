@@ -119,7 +119,7 @@ final class HealthSyncStore: ObservableObject {
                 try Task.checkCancellation()
                 try ensureServer(session, server: server)
                 progress = "Syncing \(index + 1) of \(selected.count)…"
-                if let remote = try await remoteImport(client: client, filename: workout.filename) {
+                if let remote = try await remoteImport(client: client, workout: workout) {
                     // A confirmed failed import may be retried. Anything else is reconciled.
                     if remote.status != "failed" {
                         try await apply(remote, workout: workout, client: client, server: server)
@@ -135,7 +135,7 @@ final class HealthSyncStore: ObservableObject {
                 try ensureServer(session, server: server)
                 try Task.checkCancellation()
                 var pending = HealthSyncRecord(server: server, workout: workout, state: .uncertain,
-                    message: "Refresh status to confirm whether Dreeve accepted the file. No automatic retry will be made.")
+                    message: "Refresh status to confirm whether Dreeve accepted the file. No automatic retry will be made.", uploadFilename: workout.filename)
                 // Persist intent BEFORE the request. A crash or timeout must not cause a blind reupload.
                 try save(pending)
                 do {
@@ -198,22 +198,19 @@ final class HealthSyncStore: ObservableObject {
         }
     }
 
+    private func remoteImport(client: DreeveAPIClient, workout: HealthWorkoutSummary) async throws -> DreeveImport? {
+        try await HealthImportHistory.find(client: client, filenames: workout.importFilenames)
+    }
+
     private func remoteImport(client: DreeveAPIClient, filename: String) async throws -> DreeveImport? {
-        // The live server uses substring filtering; compare exact names client-side and exhaust pages.
-        var page = 1
-        while true {
-            let result = try await client.fileImports(page: page, size: 100, filename: filename)
-            if let item = result.fileImports.first(where: { $0.filename == filename }) { return item }
-            if page >= result.pagination.totalPages { return nil }
-            page += 1
-        }
+        try await HealthImportHistory.find(client: client, filenames: [filename])
     }
 
     private func reconcile(client: DreeveAPIClient, server: String) async throws {
         for record in records where record.server == server && [.queued, .uncertain, .needsDetails].contains(record.state) {
             if record.state == .needsDetails, let id = record.activityID {
                 try await finish(record, id: id, client: client)
-            } else if let remote = try await remoteImport(client: client, filename: record.workout.filename) {
+            } else if let remote = try await remoteImport(client: client, filename: record.filename) {
                 try await apply(remote, workout: record.workout, client: client, server: server)
             }
         }
@@ -226,7 +223,7 @@ final class HealthSyncStore: ObservableObject {
         case "skipped": .skipped
         default: .queued
         }
-        let record = HealthSyncRecord(server: server, workout: workout, state: state, activityID: item.activityId, message: item.errorMessage)
+        let record = HealthSyncRecord(server: server, workout: workout, state: state, activityID: item.activityId, message: item.errorMessage, uploadFilename: item.filename)
         try save(record)
         if state == .needsDetails, let id = item.activityId { try await finish(record, id: id, client: client) }
     }
@@ -235,7 +232,7 @@ final class HealthSyncStore: ObservableObject {
         var updated = record
         do {
             let activity = try await client.activity(id)
-            // TCX has only Running/Biking/Other. Restore the actual sport after import.
+            // Keep the original Health sport for legacy TCX and FIT/server mapping differences.
             if activity.sportType != record.workout.sportType {
                 _ = try await client.editActivity(id, patch: ActivityPatch(name: activity.name, sportType: record.workout.sportType,
                     description: activity.description ?? ""))

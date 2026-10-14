@@ -137,7 +137,7 @@ struct DreeveAPIClient: Sendable {
     }
 
     func uploadActivity(data: Data, filename: String) async throws -> UploadReceipt {
-        guard filename.lowercased().hasSuffix(".tcx") else { throw APIError.unsupportedFile }
+        guard ["fit", "tcx", "gpx"].contains(URL(fileURLWithPath: filename).pathExtension.lowercased()) else { throw APIError.unsupportedFile }
         return try await upload(path: "activity/upload", data: data, filename: filename, mime: "application/octet-stream")
     }
 

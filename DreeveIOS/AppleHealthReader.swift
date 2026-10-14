@@ -51,7 +51,8 @@ final class AppleHealthReader {
             for route in routeSamples {
                 for try await location in HKWorkoutRouteQueryDescriptor(route).results(for: store) where location.horizontalAccuracy >= 0 {
                     points.append(HealthTrackpoint(date: location.timestamp, latitude: location.coordinate.latitude,
-                        longitude: location.coordinate.longitude, altitude: location.verticalAccuracy >= 0 ? location.altitude : nil))
+                        longitude: location.coordinate.longitude, altitude: location.verticalAccuracy >= 0 ? location.altitude : nil,
+                        speed: location.speedAccuracy >= 0 && location.speed >= 0 ? location.speed : nil))
                 }
             }
         }
@@ -65,7 +66,14 @@ final class AppleHealthReader {
                 }
             }
         }
-        return try HealthTCXExporter.data(workout: summary, samples: points)
+        let events = (workout.workoutEvents ?? []).compactMap { event -> HealthTimerEvent? in
+            switch event.type {
+            case .pause, .motionPaused: return HealthTimerEvent(date: event.dateInterval.start, isPaused: true)
+            case .resume, .motionResumed: return HealthTimerEvent(date: event.dateInterval.start, isPaused: false)
+            default: return nil
+            }
+        }
+        return try HealthFITExporter.data(workout: summary, samples: points, events: events)
     }
 
     private func sportType(_ workout: HKWorkout) -> String {
