@@ -53,9 +53,6 @@ struct HealthSyncView: View {
                         workoutCard(workout)
                     }
                     if !sync.visibleWorkouts(server: session.serverAddress).isEmpty {
-                        Button("Sync selected (\(selected.count))", systemImage: "arrow.triangle.2.circlepath") { confirmSync = true }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(sync.isBusy || !sync.isReady || !session.canUpload || selected.isEmpty || sync.storageError != nil)
                         Text("Uploads are queued for Dreeve’s next import run. Refresh status to finish linking imported activities.")
                             .font(.caption).foregroundStyle(DreeveTheme.muted)
                     }
@@ -64,7 +61,23 @@ struct HealthSyncView: View {
                 .disabled(sync.isBusy)
             }
             .dreeveBackground()
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !sync.visibleWorkouts(server: session.serverAddress).isEmpty {
+                    Button { confirmSync = true } label: {
+                        Label("Sync selected (\(selected.count))", systemImage: "arrow.triangle.2.circlepath")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(sync.isBusy || !sync.isReady || !session.canUpload || selected.isEmpty || sync.storageError != nil)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .background(DreeveTheme.surface)
+                    .overlay(alignment: .top) { Divider() }
+                }
+            }
             .navigationTitle("Health sync")
+            .task { if sync.isReady { await sync.refresh(session: session) } }
             .onChange(of: session.serverAddress) { _, _ in selected = [] }
             .confirmationDialog("Sync \(selected.count) workouts?", isPresented: $confirmSync, titleVisibility: .visible) {
                 Button("Send to Dreeve") {

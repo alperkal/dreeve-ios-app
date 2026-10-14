@@ -199,6 +199,9 @@ struct HealthSyncContractTest {
         precondition(legacyQueued?.filename == workout.legacyFilename && legacyQueued?.status == "queued")
         precondition(historyCalls == [workout.filename + "|1", workout.filename + "|2", workout.legacyFilename + "|1", workout.legacyFilename + "|2"])
         HealthMockURLProtocol.handler = { request in
+            if request.url!.path.hasSuffix("/activities/existing-fit") {
+                return (200, Data("{\"id\":\"existing-fit\",\"name\":\"Existing workout\",\"sportType\":\"Run\",\"startDateLocal\":\"2026-10-12T10:00:00\"}".utf8))
+            }
             let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems!
             let page = Int(query.first { $0.name == "pagination[page]" }!.value!)!
             return (200, try JSONSerialization.data(withJSONObject: ["fileImports": [["filename": workout.filename,
@@ -212,6 +215,59 @@ struct HealthSyncContractTest {
         }
         do { _ = try await HealthImportHistory.find(client: client, filenames: workout.importFilenames); preconditionFailure("Incomplete import history accepted") }
         catch APIError.decoding {}
+        let linked = HealthSyncRecord(server: "https://one.test", workout: workout, state: .imported,
+            activityID: "deleted-fit", uploadFilename: workout.filename)
+        HealthMockURLProtocol.handler = { request in
+            precondition(request.url!.path.hasSuffix("/activities/deleted-fit"))
+            return (404, Data("{\"error\":\"not_found\",\"message\":\"Activity deleted\"}".utf8))
+        }
+        for state in [HealthSyncState.imported, .skipped, .needsDetails] {
+            var stored = linked; stored.state = state
+            let recovered = try await HealthSyncRecovery.verify(stored, client: client)
+            precondition(recovered.state == .deleted && recovered.activityID == nil && recovered.filename == workout.filename)
+            try ledger.save(recovered)
+            let reopened = try HealthSyncLedger(url: path)
+            precondition(reopened.records.first { $0.id == recovered.id }?.state == .deleted)
+        }
+        for status in [401, 503] {
+            HealthMockURLProtocol.handler = { _ in (status, Data("{\"error\":\"bad_request\",\"message\":\"Unavailable\"}".utf8)) }
+            do { _ = try await HealthSyncRecovery.verify(linked, client: client); preconditionFailure("Server error treated as deletion") }
+            catch APIError.http(let code, _) { precondition(code == status && linked.state == .imported) }
+        }
+        HealthMockURLProtocol.handler = { _ in throw URLError(.timedOut) }
+        do { _ = try await HealthSyncRecovery.verify(linked, client: client); preconditionFailure("Timeout treated as deletion") }
+        catch is URLError {}
+        HealthMockURLProtocol.handler = { _ in (200, Data("{\"id\":\"deleted-fit\",\"name\":\"Still present\",\"sportType\":\"Run\",\"startDateLocal\":\"2026-10-12T10:00:00\"}".utf8)) }
+        let stillPresent = try await HealthSyncRecovery.verify(linked, client: client)
+        precondition(stillPresent.state == .imported && stillPresent.activityID == linked.activityID)
+        var pendingLink = linked; pendingLink.state = .queued
+        HealthMockURLProtocol.handler = { _ in preconditionFailure("Pending upload must not be unlocked by a missing activity") }
+        let unchanged = try await HealthSyncRecovery.verify(pendingLink, client: client)
+        precondition(unchanged.state == .queued)
+        // Historical success records can remain on older servers after deletion.
+        // Ignore only a linked activity's confirmed 404, then continue across pages.
+        var historyPages: [Int] = []
+        HealthMockURLProtocol.handler = { request in
+            if request.url!.path.hasSuffix("/activities/deleted-fit") {
+                return (404, Data("{\"error\":\"not_found\",\"message\":\"Deleted\"}".utf8))
+            }
+            let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems!
+            let page = Int(query.first { $0.name == "pagination[page]" }!.value!)!
+            historyPages.append(page)
+            var row: [String: Any] = ["filename": workout.filename, "source": "file", "status": page == 1 ? "success" : "queued"]
+            if page == 1 { row["activityId"] = "deleted-fit" }
+            return (200, try JSONSerialization.data(withJSONObject: ["fileImports": [row], "pagination": ["page": page, "size": 100, "total": 2, "totalPages": 2]]))
+        }
+        let queuedReplacement = try await HealthImportHistory.find(client: client, filenames: [workout.filename])
+        precondition(queuedReplacement?.status == "queued" && historyPages == [1,2])
+        HealthMockURLProtocol.handler = { request in
+            if request.url!.path.hasSuffix("/activities/deleted-fit") {
+                return (404, Data("{\"error\":\"not_found\",\"message\":\"Deleted\"}".utf8))
+            }
+            return (200, try JSONSerialization.data(withJSONObject: ["fileImports": [["filename": workout.filename, "source": "file", "status": "success", "activityId": "deleted-fit"]], "pagination": ["page": 1, "size": 100, "total": 1, "totalPages": 1]]))
+        }
+        let deletedHistory = try await HealthImportHistory.find(client: client, filenames: [workout.filename])
+        precondition(deletedHistory == nil)
         HealthMockURLProtocol.handler = { request in
             precondition(request.httpMethod == "POST" && request.url!.path == "/subpath/api/v1/activity/upload")
             precondition(request.value(forHTTPHeaderField:"Authorization") == "Bearer test-token")
@@ -235,6 +291,6 @@ struct HealthSyncContractTest {
         let receipt = try await client.uploadActivity(data:emptyRoute,filename:workout.filename)
         precondition(receipt.status == "queued")
         try emptyRoute.write(to:URL(fileURLWithPath:"/private/tmp/dreeve-health-synthetic.fit"))
-        print("Health sync contract tests passed: FIT CRC/profile, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history, duplicate candidates, import filters and binary multipart upload.")
+        print("Health sync contract tests passed: FIT CRC/profile, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history, duplicate candidates, confirmed deletion/re-import recovery, pending/offline protection, import filters and binary multipart upload.")
     }
 }

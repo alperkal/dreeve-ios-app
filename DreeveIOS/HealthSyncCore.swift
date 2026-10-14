@@ -26,13 +26,14 @@ struct HealthTrackpoint {
 }
 
 enum HealthSyncState: String, Codable {
-    case queued, imported, skipped, failed, uncertain, needsDetails
+    case queued, imported, skipped, failed, uncertain, needsDetails, deleted
     var label: String {
         switch self {
         case .queued: return "Queued for import"
         case .imported: return "Synced"
         case .skipped: return "Already imported (server)"
         case .failed: return "Failed — select to retry"
+        case .deleted: return "Deleted from Dreeve — select to re-import"
         case .uncertain: return "Upload unconfirmed — refresh status"
         case .needsDetails: return "Imported — finishing details"
         }
@@ -80,6 +81,24 @@ final class HealthSyncLedger {
     }
 }
 
+enum HealthSyncRecovery {
+    static func verify(_ record: HealthSyncRecord, client: DreeveAPIClient) async throws -> HealthSyncRecord {
+        guard [.imported, .skipped, .needsDetails].contains(record.state),
+              let id = record.activityID, !id.isEmpty else { return record }
+        do { _ = try await client.activity(id); return record }
+        catch APIError.http(404, _) { return deleted(record) }
+        // Authorization, decoding, timeout and other server errors are not deletion evidence.
+    }
+
+    static func deleted(_ record: HealthSyncRecord) -> HealthSyncRecord {
+        var updated = record
+        updated.state = .deleted
+        updated.activityID = nil
+        updated.message = "The linked activity was deleted from Dreeve. Select this workout to import it again as FIT."
+        return updated
+    }
+}
+
 enum HealthImportHistory {
     static func find(client: DreeveAPIClient, filenames: [String]) async throws -> DreeveImport? {
         var latestFailure: DreeveImport?
@@ -95,6 +114,10 @@ enum HealthImportHistory {
                 // Server filename filtering is substring-based. Exhaust pages and prefer
                 // any accepted import over a newer failed attempt of the same filename.
                 for item in result.fileImports where item.filename == filename {
+                    if ["success", "skipped"].contains(item.status), let id = item.activityId, !id.isEmpty {
+                        do { _ = try await client.activity(id) }
+                        catch APIError.http(404, _) { continue } // retained history of a deleted activity
+                    }
                     if item.status != "failed" { return item }
                     if latestFailure == nil { latestFailure = item }
                 }

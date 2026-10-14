@@ -54,7 +54,7 @@ final class HealthSyncStore: ObservableObject {
     func canSelect(_ workout: HealthWorkoutSummary, server: String) -> Bool {
         guard isReady, loadedServer == server, storageError == nil, !isBusy else { return false }
         let state = record(workout.id, server: server)?.state
-        return (state == nil || state == .failed) && (candidates[workout.id] ?? []).isEmpty
+        return (state == nil || state == .failed || state == .deleted) && (candidates[workout.id] ?? []).isEmpty
     }
 
     func load(session: DreeveSession, from: Date, routes: Bool, heartRate: Bool) async {
@@ -95,8 +95,16 @@ final class HealthSyncStore: ObservableObject {
         do {
             progress = "Checking import status…"
             let server = session.serverAddress
-            try await reconcile(client: session.configuredClient(), server: server)
+            let client = try session.configuredClient()
+            try await reconcile(client: client, server: server)
             try ensureServer(session, server: server)
+            if loadedServer == server, let from = workouts.map(\.start).min() {
+                let existing = try await existingActivities(client: client, from: from.addingTimeInterval(-86400))
+                try ensureServer(session, server: server)
+                for workout in workouts where !approvedNewUploads.contains(workout.id) {
+                    candidates[workout.id] = HealthWorkoutMatcher.candidates(for: workout, activities: existing)
+                }
+            }
             await session.reloadActivities()
             await session.refreshGoals()
         } catch { errorMessage = error.localizedDescription }
@@ -207,10 +215,19 @@ final class HealthSyncStore: ObservableObject {
     }
 
     private func reconcile(client: DreeveAPIClient, server: String) async throws {
-        for record in records where record.server == server && [.queued, .uncertain, .needsDetails].contains(record.state) {
-            if record.state == .needsDetails, let id = record.activityID {
+        let visibleIDs = Set(workouts.map(\.id))
+        for record in records where record.server == server {
+            try Task.checkCancellation()
+            if [.imported, .skipped].contains(record.state), visibleIDs.contains(record.workout.id) {
+                let verified = try await HealthSyncRecovery.verify(record, client: client)
+                if verified.state == .deleted {
+                    try save(verified)
+                    candidates[record.workout.id] = candidates[record.workout.id]?.filter { $0.id != record.activityID }
+                }
+            } else if record.state == .needsDetails, let id = record.activityID {
                 try await finish(record, id: id, client: client)
-            } else if let remote = try await remoteImport(client: client, filename: record.filename) {
+            } else if [.queued, .uncertain].contains(record.state),
+                      let remote = try await remoteImport(client: client, filename: record.filename) {
                 try await apply(remote, workout: record.workout, client: client, server: server)
             }
         }
@@ -241,7 +258,12 @@ final class HealthSyncStore: ObservableObject {
             updated.message = nil
             try save(updated)
         } catch {
-            updated.message = "The workout was imported. Refresh status to finish its sport details: \(error.localizedDescription)"
+            if case APIError.http(404, _) = error {
+                updated = HealthSyncRecovery.deleted(record)
+                candidates[record.workout.id] = candidates[record.workout.id]?.filter { $0.id != id }
+            } else {
+                updated.message = "The workout was imported. Refresh status to finish its sport details: \(error.localizedDescription)"
+            }
             try save(updated)
         }
     }
