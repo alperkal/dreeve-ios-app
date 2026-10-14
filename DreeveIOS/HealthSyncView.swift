@@ -19,7 +19,7 @@ struct HealthSyncView: View {
                     SurfaceCard {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Apple Health → Dreeve", systemImage: "heart.fill").font(.title2.bold())
-                            Text("Choose workouts to send as FIT files. Apple Health is read only; Dreeve edits and deletions stay in Dreeve.")
+                            Text("Choose workouts to send as FIT files, including available cadence and power. Apple Health is read only; Dreeve edits and deletions stay in Dreeve.")
                                 .font(.subheadline).foregroundStyle(DreeveTheme.muted)
                             DatePicker("Workouts since", selection: $from, in: ...Date.now, displayedComponents: .date)
                             Toggle("Include workout routes", isOn: $includeRoutes)
@@ -86,7 +86,7 @@ struct HealthSyncView: View {
                     Task { await sync.sync(ids: ids, session: session, routes: includeRoutes, heartRate: includeHeartRate) }
                 }
             } message: {
-                Text("Selected workout summaries\(includeRoutes ? ", routes" : "")\(includeHeartRate ? ", and heart rate" : "") will be sent to \(session.serverAddress).")
+                Text("Selected workout summaries, available cadence and power\(includeRoutes ? ", routes" : "")\(includeHeartRate ? ", and heart rate" : "") will be sent to \(session.serverAddress).")
             }
             .alert("Health sync", isPresented: Binding(get: { sync.errorMessage != nil }, set: { if !$0 { sync.errorMessage = nil } })) {
                 Button("OK") { sync.errorMessage = nil }

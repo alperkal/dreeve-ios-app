@@ -23,6 +23,69 @@ struct HealthTrackpoint {
     var altitude: Double? = nil
     var heartRate: Int? = nil
     var speed: Double? = nil
+    var cadence: Double? = nil // FIT cycles/min; running steps/min divided by two
+    var power: Double? = nil // watts
+}
+
+struct HealthMetricSample {
+    let start: Date
+    let end: Date
+    let value: Double
+}
+
+/// Resample only covered measurement intervals onto FIT's one-second timeline.
+/// Overlapping/duplicate readings never add together; missing intervals stay absent.
+enum HealthMetricTimeline {
+    static func runningCadence(_ steps: [HealthMetricSample]) -> [HealthMetricSample] {
+        steps.compactMap { sample in
+            let duration = sample.end.timeIntervalSince(sample.start)
+            guard duration.isFinite, duration > 0, sample.value.isFinite, sample.value >= 0 else { return nil }
+            return HealthMetricSample(start: sample.start, end: sample.end, value: sample.value * 30 / duration)
+        }
+    }
+
+    static func seconds(_ samples: [HealthMetricSample], workout: HealthWorkoutSummary,
+                        events: [HealthTimerEvent], upperBound: Double) -> [Date: Double] {
+        struct Bucket { var total = 0.0; var duration = 0.0 }
+        var buckets: [Int: Bucket] = [:]
+        var previousEnd = workout.start.timeIntervalSince1970
+        let pauses = events.filter { $0.date >= workout.start && $0.date <= workout.end }.sorted { $0.date < $1.date }
+        var pausedIntervals: [DateInterval] = []
+        var pauseStart: Date?
+        for event in pauses {
+            if event.isPaused {
+                if pauseStart == nil { pauseStart = event.date }
+            } else if let start = pauseStart {
+                pausedIntervals.append(DateInterval(start: start, end: event.date)); pauseStart = nil
+            }
+        }
+        if let start = pauseStart { pausedIntervals.append(DateInterval(start: start, end: workout.end)) }
+        // A deterministic single series avoids double-counting overlapping Health samples.
+        for sample in samples.sorted(by: { $0.start == $1.start ? $0.end < $1.end : $0.start < $1.start }) {
+            guard sample.value.isFinite, sample.value >= 0, sample.value < upperBound,
+                  sample.start.timeIntervalSince1970.isFinite, sample.end.timeIntervalSince1970.isFinite,
+                  sample.end >= sample.start else { continue }
+            let start = max(sample.start.timeIntervalSince1970, workout.start.timeIntervalSince1970, previousEnd)
+            let rawEnd = sample.end == sample.start ? sample.start.timeIntervalSince1970 + 1 : sample.end.timeIntervalSince1970
+            let end = min(rawEnd, workout.end.timeIntervalSince1970)
+            guard end > start else { continue }
+            previousEnd = end
+            for second in Int(floor(start))..<Int(ceil(end)) {
+                let from = max(Double(second), start), through = min(Double(second + 1), end)
+                let pausedDuration = pausedIntervals.reduce(0.0) { duration, interval in
+                    duration + max(0, min(through, interval.end.timeIntervalSince1970) - max(from, interval.start.timeIntervalSince1970))
+                }
+                let covered = through - from - pausedDuration
+                // Do not turn paused time into zero readings or carry data across gaps.
+                guard covered > 0 else { continue }
+                var bucket = buckets[second] ?? Bucket()
+                bucket.total += sample.value * covered
+                bucket.duration += covered
+                buckets[second] = bucket
+            }
+        }
+        return Dictionary(uniqueKeysWithValues: buckets.map { (Date(timeIntervalSince1970: Double($0.key)), $0.value.total / $0.value.duration) })
+    }
 }
 
 enum HealthSyncState: String, Codable {

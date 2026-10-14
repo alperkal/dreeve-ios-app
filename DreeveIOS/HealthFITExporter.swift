@@ -42,6 +42,8 @@ enum HealthFITExporter {
             if let altitude = point.altitude, altitude.isFinite { merged.altitude = altitude }
             if let rate = point.heartRate, (1...254).contains(rate) { merged.heartRate = rate }
             if let speed = point.speed, speed.isFinite, speed >= 0 { merged.speed = speed }
+            if let cadence = point.cadence, cadenceParts(cadence).0 != .max { merged.cadence = cadence }
+            if let power = point.power, small(power) != .max { merged.power = power }
             points[time] = merged
         }
         var timerEvents: [(UInt32, UInt8)] = [(start, 0)] // timer start
@@ -59,10 +61,12 @@ enum HealthFITExporter {
             let point = points[time]!
             let altitude = scaled(point.altitude.map { $0 + 500 }, scale: 5)
             let speed = scaled(point.speed, scale: 1000)
+            let cadence = cadenceParts(point.cadence)
             writer.message(20, local: 2, fields: [
                 .u32(253, time), .i32(0, semicircles(point.latitude)), .i32(1, semicircles(point.longitude)),
                 .u16(2, altitude < UInt16.max ? UInt16(altitude) : .max),
                 .u8(3, point.heartRate.map(UInt8.init) ?? .max),
+                .u8(4, cadence.0), .u8(53, cadence.1), .u16(7, small(point.power)),
                 .u16(6, speed < UInt16.max ? UInt16(speed) : .max),
                 .u32(73, speed), .u32(78, altitude)
             ])
@@ -71,15 +75,33 @@ enum HealthFITExporter {
         // from Health's active duration rather than deriving it from sparse GPS samples.
         var totals: [Field] = [.u32(253, end), .u16(254, 0), .u32(2, start),
                                .u32(7, elapsedMS), .u32(8, activeMS), .u32(9, distance), .u16(11, calories)]
-        writer.message(19, local: 3, fields: totals + [.enum8(0, 9), .enum8(1, 1)]) // lap/stop
+        let cadenceValues = points.values.compactMap(\.cadence)
+        let powerValues = points.values.compactMap(\.power)
+        let averageCadence = cadenceParts(average(cadenceValues))
+        let maximumCadence = cadenceParts(cadenceValues.max())
+        let powerSummary: [Field] = [.u16(19, small(average(powerValues))), .u16(20, small(powerValues.max()))]
+        writer.message(19, local: 3, fields: totals + [.enum8(0, 9), .enum8(1, 1),
+            .u8(17, averageCadence.0), .u8(18, maximumCadence.0), .u8(80, averageCadence.1), .u8(81, maximumCadence.1)] + powerSummary) // lap/stop
         totals += [.enum8(5, sport.0), .enum8(6, sport.1), .u16(25, 0), .u16(26, 1), .string(110, workout.sportType)]
-        writer.message(18, local: 4, fields: totals + [.enum8(0, 8), .enum8(1, 1)]) // session/stop
+        writer.message(18, local: 4, fields: totals + [.enum8(0, 8), .enum8(1, 1),
+            .u8(18, averageCadence.0), .u8(19, maximumCadence.0), .u8(92, averageCadence.1), .u8(93, maximumCadence.1),
+            .u16(20, small(average(powerValues))), .u16(21, small(powerValues.max()))]) // session/stop
         let zone = TimeZone(identifier: workout.timeZoneIdentifier) ?? TimeZone(secondsFromGMT: 0)!
         let localTime = Int64(end) + Int64(zone.secondsFromGMT(for: workout.end))
         writer.message(34, local: 5, fields: [.u32(253, end), .u32(0, activeMS), .u16(1, 1),
             .enum8(2, 0), .enum8(3, 26), .enum8(4, 1),
             .u32(5, localTime >= 0 && localTime < UInt32.max ? UInt32(localTime) : .max)])
         return writer.finish()
+    }
+
+    private static func average(_ values: [Double]) -> Double? {
+        values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
+    }
+    private static func cadenceParts(_ value: Double?) -> (UInt8, UInt8) {
+        guard let value, value.isFinite, value >= 0, value < 255 else { return (.max, .max) }
+        let quantized = (value * 128).rounded()
+        guard quantized < 255 * 128 else { return (.max, .max) }
+        return (UInt8(Int(quantized) / 128), UInt8(Int(quantized) % 128))
     }
 
     private static func timestamp(_ date: Date) throws -> UInt32 {

@@ -10,7 +10,7 @@ final class AppleHealthReader {
     func authorize(routes: Bool, heartRate: Bool) async throws {
         guard HKHealthStore.isHealthDataAvailable() else { throw HealthSyncError.unavailable }
         var types: Set<HKObjectType> = [HKObjectType.workoutType()]
-        for id: HKQuantityTypeIdentifier in [.activeEnergyBurned, .distanceWalkingRunning, .distanceCycling, .distanceSwimming, .distanceWheelchair] {
+        for id: HKQuantityTypeIdentifier in [.activeEnergyBurned, .distanceWalkingRunning, .distanceCycling, .distanceSwimming, .distanceWheelchair, .stepCount, .runningPower, .cyclingPower, .cyclingCadence] {
             types.insert(HKQuantityType(id))
         }
         if routes { types.insert(HKSeriesType.workoutRoute()) }
@@ -73,7 +73,48 @@ final class AppleHealthReader {
             default: return nil
             }
         }
+        var cadence: [HealthMetricSample] = []
+        var power: [HealthMetricSample] = []
+        switch workout.workoutActivityType {
+        case .running:
+            power = try await metricSamples(.runningPower, unit: .watt(), workout: workout)
+            let steps = try await metricSamples(.stepCount, unit: .count(), workout: workout)
+            cadence = HealthMetricTimeline.runningCadence(steps)
+        case .walking, .hiking:
+            let steps = try await metricSamples(.stepCount, unit: .count(), workout: workout)
+            cadence = HealthMetricTimeline.runningCadence(steps)
+        case .cycling:
+            power = try await metricSamples(.cyclingPower, unit: .watt(), workout: workout)
+            cadence = try await metricSamples(.cyclingCadence, unit: HKUnit.count().unitDivided(by: .minute()), workout: workout)
+        default: break
+        }
+        for (date, value) in HealthMetricTimeline.seconds(cadence, workout: summary, events: events, upperBound: 255) {
+            points.append(HealthTrackpoint(date: max(date, summary.start), cadence: value))
+        }
+        for (date, value) in HealthMetricTimeline.seconds(power, workout: summary, events: events, upperBound: 65535) {
+            points.append(HealthTrackpoint(date: max(date, summary.start), power: value))
+        }
         return try HealthFITExporter.data(workout: summary, samples: points, events: events)
+    }
+
+    private func metricSamples(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, workout: HKWorkout) async throws -> [HealthMetricSample] {
+        let type = HKQuantityType(identifier)
+        let dates = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate)
+        var predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [dates, HKQuery.predicateForObjects(from: workout)])
+        let linked = try await HKSampleQueryDescriptor(predicates: [.quantitySample(type: type, predicate: predicate)], sortDescriptors: [], limit: 1).result(for: store)
+        if linked.isEmpty {
+            // Some Watch measurements are not associated with the workout. Limit the
+            // fallback to its recording source, avoiding phone/Watch step double-counting.
+            predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [dates, HKQuery.predicateForObjects(from: [workout.sourceRevision.source])])
+        }
+        let descriptor = HKQuantitySeriesSampleQueryDescriptor(predicate: .quantitySample(type: type, predicate: predicate))
+        var readings: [HealthMetricSample] = []
+        for try await result in descriptor.results(for: store) {
+            try Task.checkCancellation()
+            readings.append(HealthMetricSample(start: result.dateInterval.start, end: result.dateInterval.end,
+                                               value: result.quantity.doubleValue(for: unit)))
+        }
+        return readings
     }
 
     private func sportType(_ workout: HKWorkout) -> String {

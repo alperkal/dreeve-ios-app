@@ -230,7 +230,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                 CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
-                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync their summaries, optional routes and heart rate to your Dreeve server.";
+                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -301,7 +301,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
                 CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
-                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync their summaries, optional routes and heart rate to your Dreeve server.";
+                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

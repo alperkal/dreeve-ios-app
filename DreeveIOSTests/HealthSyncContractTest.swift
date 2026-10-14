@@ -136,6 +136,45 @@ struct HealthSyncContractTest {
         catch HealthSyncError.invalidWorkout {}
         try routeData.write(to: URL(fileURLWithPath:"/private/tmp/dreeve-health-synthetic-route.fit"))
 
+        func sample(_ from: Double, _ through: Double, _ value: Double) -> HealthMetricSample {
+            HealthMetricSample(start: start.addingTimeInterval(from), end: start.addingTimeInterval(through), value: value)
+        }
+        let steps = HealthMetricTimeline.runningCadence([sample(0, 2, 6), sample(0, 2, 6), sample(3, 5, 7), sample(8, 8, 1), sample(9, 10, .nan)])
+        precondition(steps.count == 3 && steps[0].value == 90 && steps[2].value == 105)
+        let cadenceSeconds = HealthMetricTimeline.seconds(steps, workout: workout, events: [], upperBound: 255)
+        precondition(cadenceSeconds.count == 4 && cadenceSeconds[start] == 90 && cadenceSeconds[start.addingTimeInterval(3)] == 105)
+        precondition(cadenceSeconds[start.addingTimeInterval(2)] == nil) // don't bridge missing samples
+        let powerSeconds = HealthMetricTimeline.seconds([sample(0, 2, 200), sample(0, 2, 200), sample(2, 4, 0), sample(4, 6, 400),
+            sample(8, 8, 300), sample(9, 10, -1), sample(10, 11, .nan), sample(11, 12, 65535)], workout: workout,
+            events: [HealthTimerEvent(date: start.addingTimeInterval(4.5), isPaused: true), HealthTimerEvent(date: start.addingTimeInterval(5.5), isPaused: false)], upperBound: 65535)
+        precondition(powerSeconds.count == 7 && powerSeconds[start] == 200 && powerSeconds[start.addingTimeInterval(2)] == 0)
+        precondition(powerSeconds[start.addingTimeInterval(4)] == 400 && powerSeconds[start.addingTimeInterval(6)] == nil)
+        let pausedOnly = HealthMetricTimeline.seconds([sample(0, 10, 250)], workout: workout,
+            events: [HealthTimerEvent(date: start, isPaused: true), HealthTimerEvent(date: start.addingTimeInterval(10), isPaused: false)], upperBound: 65535)
+        precondition(pausedOnly.isEmpty)
+        let clipped = HealthMetricTimeline.seconds([sample(-1, 1, 100), sample(1799, 1801, 200)], workout: workout, events: [], upperBound: 65535)
+        precondition(clipped.count == 2 && clipped[start] == 100 && clipped[workout.end] == nil)
+        let fractionSeconds = HealthMetricTimeline.seconds([sample(0, 0.5, 100), sample(0.5, 1, 300)], workout: workout, events: [], upperBound: 65535)
+        precondition(fractionSeconds[start] == 200)
+        let sensorPoints = powerSeconds.map { HealthTrackpoint(date: $0.key, power: $0.value) } +
+            cadenceSeconds.map { HealthTrackpoint(date: $0.key, cadence: $0.value) } +
+            [HealthTrackpoint(date: start.addingTimeInterval(8), cadence: 85.25),
+             HealthTrackpoint(date: start.addingTimeInterval(9), cadence: .nan, power: -1)]
+        let sensorData = try HealthFITExporter.data(workout: workout, samples: sensorPoints)
+        let sensorFIT = try FITInspector(sensorData)
+        let sensorRecords = sensorFIT.messages.filter { $0.number == 20 }
+        let sensorStart = sensorRecords.first { $0.unsigned(253) == UInt64(start.timeIntervalSince1970 - HealthFITExporter.epoch) }!
+        precondition(sensorStart.unsigned(4) == 90 && sensorStart.unsigned(7) == 200)
+        let fractional = sensorRecords.first { $0.unsigned(53) == 32 }!
+        precondition(fractional.unsigned(4) == 85 && fractional.unsigned(7) == 300)
+        let sensorSession = sensorFIT.messages.first { $0.number == 18 }!
+        precondition(sensorSession.unsigned(20) == 214 && sensorSession.unsigned(21) == 400) // zero-power seconds included
+        precondition(sensorSession.unsigned(18) == 95 && sensorSession.unsigned(92) == 6 && sensorSession.unsigned(19) == 105)
+        let sensorLap = sensorFIT.messages.first { $0.number == 19 }!
+        precondition(sensorLap.unsigned(19) == 214 && sensorLap.unsigned(20) == 400 && sensorLap.unsigned(17) == 95)
+        precondition(session.unsigned(20) == 65535 && session.unsigned(18) == 255) // missing measurements remain missing
+        try sensorData.write(to: URL(fileURLWithPath: "/private/tmp/dreeve-health-synthetic-sensors.fit"))
+
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let path = directory.appendingPathComponent("history.json")
@@ -291,6 +330,6 @@ struct HealthSyncContractTest {
         let receipt = try await client.uploadActivity(data:emptyRoute,filename:workout.filename)
         precondition(receipt.status == "queued")
         try emptyRoute.write(to:URL(fileURLWithPath:"/private/tmp/dreeve-health-synthetic.fit"))
-        print("Health sync contract tests passed: FIT CRC/profile, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history, duplicate candidates, confirmed deletion/re-import recovery, pending/offline protection, import filters and binary multipart upload.")
+        print("Health sync contract tests passed: FIT CRC/profile, cadence/power records and summaries, step-rate conversion, condensed intervals/duplicates/gaps/zeros/pauses, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history, duplicate candidates, confirmed deletion/re-import recovery, pending/offline protection, import filters and binary multipart upload.")
     }
 }
