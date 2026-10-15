@@ -63,6 +63,10 @@ struct RootView: View {
                 NavigationStack { SettingsView() }
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            // Return ordinary app opens to Overview; widget links can still select Goals.
+            if phase == .background { selectedTab = 0 }
+        }
         .onOpenURL { url in
             if url.scheme == "dreeve", url.host == "goals" { selectedTab = 2 }
         }
