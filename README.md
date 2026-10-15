@@ -4,7 +4,7 @@ A starter iPhone app for a **self-hosted Dreeve** server, based on the public Dr
 
 ## Screenshots
 
-Captured from the iPhone 17 simulator using demo activity data. Goals are saved locally in this build.
+App screens are captured from the iPhone 17 simulator using demo activities and gear. Shoe thumbnails are sample illustrations. Widget images are rendered previews of the actual small, medium and large widget views using synthetic goals; no update-time labels are displayed.
 
 | Overview | Activities |
 | --- | --- |
@@ -14,13 +14,25 @@ Captured from the iPhone 17 simulator using demo activity data. Goals are saved 
 | --- | --- |
 | <img src="docs/screenshots/goals.png" alt="Goals list with favorite selection and weekly and monthly progress" width="320"> | <img src="docs/screenshots/create-goal.png" alt="Goal editor with sport, metric, frequency and target fields" width="320"> |
 
+| Gear | Activities for a gear | Gear thumbnail in activity details |
+| --- | --- | --- |
+| <img src="docs/screenshots/gear.png" alt="Gear screen with rounded shoe thumbnails, distance, activity counts and retired gear" width="240"> | <img src="docs/screenshots/gear-activities.png" alt="Activities filtered to Brooks Ghost 16 after opening the gear row" width="240"> | <img src="docs/screenshots/activity-gear.png" alt="Activity details with the selected gear thumbnail beside its name" width="240"> |
+
+| Small widget: in progress | Small widget: goal reached |
+| --- | --- |
+| <img src="docs/screenshots/widget-ring-progress.png" alt="Small goal widget with a circular progress ring at 67 percent, two of three walks" width="170"> | <img src="docs/screenshots/widget-ring-complete.png" alt="Small goal widget with a completed ring and lime-to-green check badge" width="170"> |
+
+| Medium widget: two goals | Large widget: four goals |
+| --- | --- |
+| <img src="docs/screenshots/widget-goals-medium.png" alt="Medium widget with weekly walk and monthly running progress bars" width="364"> | <img src="docs/screenshots/widget-goals-large.png" alt="Large widget with four goal progress bars and a completion check for strength sessions" width="364"> |
+
 ## Features included
 
 - Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Gear, Health sync, Upload, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
-- Display assigned gear name, imported/custom type, retirement status, lifetime distance, and activity count. Choose existing gear (including retired items) or remove the assignment. Loading errors offer a retry, and missing inventory entries preserve the current assignment.
+- Browse active and retired gear with cached pictures and open each gear's activity list. Display the assigned gear thumbnail, name, imported/custom type, retirement status, lifetime distance, and activity count. Choose existing gear (including retired items) or remove the assignment. Loading errors offer a retry, and missing inventory entries preserve the current assignment.
 - Add an image from the Photos library (when upload mode is supported).
 - Download an existing GPX and share it from the device.
 - Import `.fit`, `.tcx` and `.gpx` from Files using multipart upload, and view import job states. Import is asynchronous.
@@ -245,11 +257,7 @@ Verification includes portable tests for the two-tap state machine, 10-second ex
 
 Add **Dreeve → Goal ring** (small) for circular progress, or **Goals overview** (medium/large) for progress bars. Reaching or exceeding the target shows a navy check in a lime-to-green badge that matches the app. Tap a widget to open Goals.
 
-| Small: goal reached | Medium: progress bars |
-| --- | --- |
-| <img src="docs/screenshots/widget-ring-complete.png" alt="Small circular goal widget with a lime completion check" width="170"> | <img src="docs/screenshots/widget-goals-medium.png" alt="Medium goal widget showing weekly and monthly progress bars" width="364"> |
-
-These are rendered previews of the actual widget views using synthetic sample goals.
+See the [screenshot gallery](#screenshots) for small progress/completion rings and medium/large progress-bar layouts.
 
 The small widget supports **Edit Widget → Goal** to choose any active goal. Its initial choice prioritizes your first favorite. The medium widget shows two goals and the large widget shows up to four, with your selected favorites first. Archived/deleted goals are excluded. If a specifically selected goal becomes unavailable or belongs to another Dreeve connection, the widget asks you to choose another; it never quietly substitutes a different goal.
 
