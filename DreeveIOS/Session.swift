@@ -107,22 +107,37 @@ final class DreeveSession: ObservableObject {
     func refreshInsights() async {
         guard !isLoadingInsights, let client else { return }
         isLoadingInsights = true
+        errorMessage = nil
         defer { isLoadingInsights = false }
         do {
-            let start = Calendar.current.date(byAdding: .day, value: -29, to: Calendar.current.startOfDay(for: .now)) ?? .now
-            let date = ActivityDates.calendarDate.string(from: start)
-            var all: [DreeveActivity] = []
-            var next = 1
-            // Exhaust all pages for the selected 30-day period, no sampling.
-            while true {
-                let result = try await client.activities(page: next, size: 100, from: date)
-                all += result.activities
-                if next >= result.pagination.totalPages { break }
-                next += 1
-            }
+            // SwiftUI may cancel its refresh/view task while updating the screen.
+            // Let this finite fetch finish independently so pull-to-refresh can publish results.
+            let all = try await Task {
+                let start = Calendar.current.date(byAdding: .day, value: -29, to: Calendar.current.startOfDay(for: .now)) ?? .now
+                let date = ActivityDates.calendarDate.string(from: start)
+                var all: [DreeveActivity] = []
+                var next = 1
+                // Exhaust all pages for the selected 30-day period, no sampling.
+                while true {
+                    let result = try await client.activities(page: next, size: 100, from: date)
+                    all += result.activities
+                    if next >= result.pagination.totalPages { break }
+                    next += 1
+                }
+                return all
+            }.value
+            // Never publish an old connection's response after an account switch/logout.
+            guard self.client?.baseURL == client.baseURL, self.client?.token == client.token else { return }
             insightsActivities = all
             didLoadInsights = true
-        } catch { errorMessage = error.localizedDescription }
+        } catch is CancellationError {
+            // Cancellation is a lifecycle event, not a failed server request.
+        } catch let error as URLError where error.code == .cancelled {
+            // URLSession uses NSURLErrorCancelled for cancelled requests.
+        } catch {
+            guard self.client?.baseURL == client.baseURL, self.client?.token == client.token else { return }
+            errorMessage = error.localizedDescription
+        }
     }
 
     func refreshGoals() async {
