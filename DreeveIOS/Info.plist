@@ -4,5 +4,18 @@
 <dict>
 	<key>GoalCloudContainer</key>
 	<string></string>
+	<key>DreeveAppGroup</key>
+	<string>$(DREEVE_APP_GROUP_IDENTIFIER)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Dreeve goals</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dreeve</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

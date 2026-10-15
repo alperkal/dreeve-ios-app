@@ -12,8 +12,10 @@ struct DreeveApp: App {
         WindowGroup {
             Group {
                 if let container = goals.container {
-                    RootView().modelContainer(container)
-                } else { RootView() }
+                    RootView().background { GoalWidgetPublisher() }.modelContainer(container)
+                } else {
+                    RootView().task { try? GoalWidgetStorage().write(.empty) }
+                }
             }
                 .environmentObject(goals)
                 .environmentObject(session.goalProgress)
@@ -28,30 +30,41 @@ struct RootView: View {
     @EnvironmentObject private var session: DreeveSession
     @EnvironmentObject private var persistence: GoalPersistence
     @Environment(\.scenePhase) private var scenePhase
+    @State private var selectedTab = 0
 
     var body: some View {
         Group {
             if session.isConfigured {
-                TabView {
+                TabView(selection: $selectedTab) {
                     DashboardView()
                         .tabItem { Label("Overview", systemImage: "chart.bar.xaxis") }
+                        .tag(0)
                     ActivitiesView()
                         .tabItem { Label("Activities", systemImage: "figure.run") }
+                        .tag(1)
                     GoalsView()
                         .tabItem { Label("Goals", systemImage: "target") }
+                        .tag(2)
                     GearView()
                         .tabItem { Label("Gear", systemImage: "shoeprints.fill") }
+                        .tag(3)
                     HealthSyncView()
                         .tabItem { Label("Health sync", systemImage: "heart") }
+                        .tag(4)
                     UploadView()
                         .tabItem { Label("Upload", systemImage: "square.and.arrow.up") }
+                        .tag(5)
                     NavigationStack { SettingsView() }
                         .tabItem { Label("Settings", systemImage: "gearshape") }
+                        .tag(6)
                 }
                 .tint(DreeveTheme.accent)
             } else {
                 NavigationStack { SettingsView() }
             }
+        }
+        .onOpenURL { url in
+            if url.scheme == "dreeve", url.host == "goals" { selectedTab = 2 }
         }
         .background(DreeveTheme.background)
         .task(id: "\(session.serverAddress)|\(scenePhase == .active)") {

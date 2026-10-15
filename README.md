@@ -151,16 +151,16 @@ References: [Garmin FIT protocol](https://developer.garmin.com/fit/protocol/), [
 
 Create any number of independent recurring goals in the Goals tab. Each goal chooses an exact Dreeve sport type, activity count or distance, weekly or monthly frequency, and a positive target. Counts must be whole numbers. Distance is entered/displayed in kilometres and stored in metres. Tap a goal to edit it, swipe left to archive, or restore archived goals. Delete is available in the editor. Select Favorite 1 and Favorite 2 at the top of Goals; Overview shows only those selected slots. Concurrent favorite-slot conflicts are resolved deterministically in the UI.
 
-### Personal Team: local goals by default
+### Local goals and widget signing
 
-The default Debug/Release builds use `DreeveIOS.entitlements` without iCloud or Push Notifications and `Info.plist` with an empty `GoalCloudContainer`. Goals are persisted locally with SwiftData and keep working offline; they do not sync between devices. This removes the Personal Team provisioning failure introduced by the Goals update. Existing HealthKit support, signing team and bundle ID are preserved. Select your Personal Team, then build/run again. If Xcode still shows the old capability error, close/reopen the project and use Product → Clean Build Folder.
+Default Debug/Release builds keep SwiftData goals local, with iCloud and Push Notifications disabled. The Home Screen widgets add the **App Groups** capability to share derived goal progress with the extension. On a device, both app and extension need a signing team/profiles that support that App Group. The earlier Personal Team-only setup cannot provide this shared-container widget feature. See the widget setup below. Unsigned simulator/iPhone builds remain available for CI; they do not establish that a device provisioning profile is eligible.
 
-Apple limits iCloud and Push Notifications provisioning to eligible developer-program teams. See [Apple's developer account overview](https://developer.apple.com/help/account/basics/about-your-developer-account).
+Apple limits capabilities by program membership. See [supported iOS capabilities](https://developer.apple.com/help/account/reference/supported-capabilities-ios) and [configuring App Groups](https://developer.apple.com/documentation/xcode/configuring-app-groups).
 
 ### Optional iCloud sync with an eligible paid team
 
 1. Select an Apple Developer Program team and a unique bundle ID.
-2. In the target's Build Settings, set **Code Signing Entitlements** (`CODE_SIGN_ENTITLEMENTS`) to `DreeveIOS/DreeveIOS-iCloud.entitlements` and **Info.plist File** (`INFOPLIST_FILE`) to `DreeveIOS/Info-iCloud.plist` for both Debug and Release. The separate default local files remain available when switching back to a Personal Team.
+2. In the target's Build Settings, set **Code Signing Entitlements** (`CODE_SIGN_ENTITLEMENTS`) to `DreeveIOS/DreeveIOS-iCloud.entitlements` and **Info.plist File** (`INFOPLIST_FILE`) to `DreeveIOS/Info-iCloud.plist` for both Debug and Release. The default local files keep iCloud disabled; their widget App Group still requires eligible signing.
 3. In Signing & Capabilities, enable **iCloud → CloudKit**, **Push Notifications**, and **Background Modes → Remote notifications**. Create/select `iCloud.<your bundle ID>` in your developer account. If using another container, update the identifier in both optional iCloud files. These capabilities synchronize goal definitions; Dreeve activity progress still requires API refresh.
 4. Run signed builds on two devices using the same iCloud account and container. Verify goal creation/edit/archive and favorites on both. Sync is asynchronous; Goals displays account/sync status.
 5. Before TestFlight/App Store distribution, initialize the development CloudKit schema with a signed development run and deploy it to production in CloudKit Console. Keep the bundle/container identity stable.
@@ -239,3 +239,31 @@ Image selection keeps SearXNG's result order, tries a result's HTTPS thumbnail i
 Pictures are stored in Application Support, separately from SwiftData/CloudKit and excluded from iCloud backup. The filename hashes both the Dreeve instance and gear ID. There is exactly one cached image per gear/instance: atomic replacement removes the previous file contents only after a new image is ready. Existing pictures load locally without another search. The last displayed picture is retained if you close the app during selection. A brief navigation away keeps the countdown; pending downloads are cancelled when leaving the screen or backgrounding the app.
 
 Verification includes portable tests for the two-tap state machine, 10-second expiry/restart, ordered SearXNG decoding, request query/auth isolation, errors and size limits, cache replacement/relaunch/instance isolation, and full-history gear filtering with duplicate/stale IDs. Simulator checks verify subject centering and the actual image-download/cache/countdown flow. The portable tests run through `run_tests.sh` and therefore also run in GitHub Actions. Simulator-specific image-processing checks were run separately in an isolated temporary QA app; fixture data is not shipped.
+
+
+## Home Screen goal widgets
+
+Add **Dreeve → Goal ring** (small) for circular progress, or **Goals overview** (medium/large) for progress bars. Reaching or exceeding the target shows a navy check in a lime-to-green badge that matches the app. Tap a widget to open Goals.
+
+| Small: goal reached | Medium: progress bars |
+| --- | --- |
+| <img src="docs/screenshots/widget-ring-complete.png" alt="Small circular goal widget with a lime completion check" width="170"> | <img src="docs/screenshots/widget-goals-medium.png" alt="Medium goal widget showing weekly and monthly progress bars" width="364"> |
+
+These are rendered previews of the actual widget views using synthetic sample goals.
+
+The small widget supports **Edit Widget → Goal** to choose any active goal. Its initial choice prioritizes your first favorite. The medium widget shows two goals and the large widget shows up to four, with your selected favorites first. Archived/deleted goals are excluded. If a specifically selected goal becomes unavailable or belongs to another Dreeve connection, the widget asks you to choose another; it never quietly substitutes a different goal.
+
+### Device setup
+
+1. In the project's Build Settings, set `DREEVE_APP_BUNDLE_IDENTIFIER` to your unique app identifier. The widget bundle ID and default group ID derive from it. Both targets must use the same eligible signing team.
+2. Register/enable **App Groups** for both **DreeveIOS** and **DreeveWidgets**, using the same `DREEVE_APP_GROUP_IDENTIFIER` (default `group.<app bundle ID>.goals`). The supplied app/extension entitlements and Info.plist files reference this shared setting. Automatic signing can manage profiles when your account has permission. Personal Teams do not support the shared App Group setup needed here; see [Apple's capability matrix](https://developer.apple.com/help/account/reference/supported-capabilities-ios).
+3. Run the app once, connect to Dreeve, create/select goals and refresh progress. Then add a widget from the iOS Home Screen widget gallery. A new install or inaccessible shared container shows an open-app prompt rather than demo progress. CloudKit remains optional and is not required for the widgets.
+4. Release signing must cover both the app and embedded `.appex`, with matching app-group membership. CI builds both automatically through the main shared scheme and validates extension embedding, bundle IDs, version/build numbers and group settings before packaging. Unsigned release assets require your own provisioning/signing for both products.
+
+### Refresh and privacy
+
+Widgets show the last goal snapshot published by the app. Goal/favorite edits, archives/deletions, activity progress refreshes/edits/deletions, account switches and logout update or clear that snapshot and request a WidgetKit reload. An unchanged snapshot does not trigger another reload. WidgetKit schedules actual reloads; the extension asks for a refresh around every 15 minutes and includes a local-midnight entry. External server activity changes require an app refresh; the widget does not make authenticated API calls in the background.
+
+A week/month rollover never reuses the previous period's completion check. Until the app fetches the new period, the value is unknown and the widget asks for a refresh. Widgets omit update-time labels. Cached progress remains available after a failed refresh. The widget uses the same Monday-based calendar boundaries and local-day membership calculated by the main goal engine. A local App Group JSON snapshot contains only the current instance hash, active goal definitions, favorite IDs, derived totals, period boundaries and refresh status. It contains no API token, server URL, Health samples or raw activities; it is written atomically with device file protection and excluded from backup. SwiftData and its optional CloudKit database stay in the main app's existing location.
+
+Widget logic tests cover completion/overshoot, period rollover, unknown progress, favorite ordering, unavailable selection, freshness, shared-cache persistence/corruption, instance replacement/logout and credential-free payloads. The app and embedded extension are built for simulator and iPhone. The small, medium, large, completed, empty and rollover views were rendered in an isolated simulator preview app. Real Home Screen registration, App Intent selection, shared-container access and timeline scheduling still need verification with an appropriately signed installation.

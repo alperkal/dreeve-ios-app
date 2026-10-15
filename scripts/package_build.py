@@ -22,9 +22,25 @@ def app_info(app, platform):
     return info
 
 
+def validate_widget(app, parent, platform):
+    widget = app / "PlugIns" / "DreeveWidgets.appex"
+    info = app_info(widget, platform)
+    if info.get("NSExtension", {}).get("NSExtensionPointIdentifier") != "com.apple.widgetkit-extension":
+        raise ValueError("Expected an embedded WidgetKit extension")
+    if info["CFBundleIdentifier"] != parent["CFBundleIdentifier"] + ".GoalsWidget":
+        raise ValueError("Widget bundle ID must be nested under its containing app")
+    for key in ("CFBundleShortVersionString", "CFBundleVersion", "DreeveAppGroup"):
+        if not info.get(key) or info[key] != parent.get(key):
+            raise ValueError(f"Widget and app disagree on {key}")
+    if platform == "iPhoneOS" and ((widget / "_CodeSignature").exists() or (widget / "embedded.mobileprovision").exists()):
+        raise ValueError("Expected an unsigned widget extension")
+
+
 def package(simulator, iphone, output):
     simulator_info = app_info(simulator, "iPhoneSimulator")
     iphone_info = app_info(iphone, "iPhoneOS")
+    validate_widget(simulator, simulator_info, "iPhoneSimulator")
+    validate_widget(iphone, iphone_info, "iPhoneOS")
     for key in ("CFBundleIdentifier", "CFBundleShortVersionString", "CFBundleVersion"):
         if simulator_info[key] != iphone_info[key]:
             raise ValueError(f"Simulator and iPhone products disagree on {key}")
