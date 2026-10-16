@@ -348,6 +348,7 @@ private struct ActivityPhotoView: View {
     @State private var isLoading = true
     @State private var failure: String?
     @State private var attempt = 0
+    @State private var isShowingPhoto = false
 
     private var browserURL: URL? {
         try? session.configuredClient().activityPhotoURL(source)
@@ -357,7 +358,11 @@ private struct ActivityPhotoView: View {
         ZStack {
             DreeveTheme.surface
             if let photo {
-                Image(uiImage: photo).resizable().scaledToFill()
+                Button { isShowingPhoto = true } label: {
+                    Image(uiImage: photo).resizable().scaledToFill()
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("View photo full screen")
             } else if isLoading {
                 ProgressView("Loading photo…")
             } else {
@@ -376,6 +381,9 @@ private struct ActivityPhotoView: View {
         }
         .frame(width: 220, height: 150)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .fullScreenCover(isPresented: $isShowingPhoto) {
+            if let photo { ActivityPhotoViewer(photo: photo) }
+        }
         .task(id: attempt) {
             isLoading = true
             failure = nil
@@ -394,5 +402,91 @@ private struct ActivityPhotoView: View {
                 failure = error.localizedDescription
             }
         }
+    }
+}
+
+
+private struct ActivityPhotoViewer: View {
+    @Environment(\.dismiss) private var dismiss
+    let photo: UIImage
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            ZoomableActivityPhoto(photo: photo).ignoresSafeArea()
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(.black.opacity(0.6), in: Circle())
+            }
+            .accessibilityLabel("Close photo")
+            .padding(16)
+        }
+        .statusBarHidden()
+    }
+}
+
+private struct ZoomableActivityPhoto: UIViewRepresentable {
+    let photo: UIImage
+
+    func makeUIView(context: Context) -> ActivityPhotoScrollView {
+        ActivityPhotoScrollView(photo: photo)
+    }
+    func updateUIView(_ uiView: ActivityPhotoScrollView, context: Context) {}
+}
+
+private final class ActivityPhotoScrollView: UIScrollView, UIScrollViewDelegate {
+    private let photoView = UIImageView()
+    private var viewportSize = CGSize.zero
+
+    init(photo: UIImage) {
+        super.init(frame: .zero)
+        delegate = self
+        minimumZoomScale = 1
+        maximumZoomScale = 5
+        bouncesZoom = true
+        showsHorizontalScrollIndicator = false
+        showsVerticalScrollIndicator = false
+        contentInsetAdjustmentBehavior = .never
+        backgroundColor = .black
+        photoView.image = photo
+        photoView.contentMode = .scaleAspectFit
+        photoView.isAccessibilityElement = true
+        photoView.accessibilityLabel = "Activity photo"
+        photoView.accessibilityHint = "Pinch to zoom, drag to move, or double tap to toggle zoom."
+        addSubview(photoView)
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(toggleZoom(_:)))
+        doubleTap.numberOfTapsRequired = 2
+        addGestureRecognizer(doubleTap)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // Refit on rotation/resizing; ordinary zoom/pan layouts retain the user's scale.
+        guard bounds.size != viewportSize, bounds.width > 0, bounds.height > 0 else { return }
+        viewportSize = bounds.size
+        setZoomScale(1, animated: false)
+        photoView.transform = .identity
+        photoView.frame = CGRect(origin: .zero, size: viewportSize)
+        contentSize = viewportSize
+        contentOffset = .zero
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? { photoView }
+
+    @objc private func toggleZoom(_ gesture: UITapGestureRecognizer) {
+        guard zoomScale <= minimumZoomScale else {
+            setZoomScale(minimumZoomScale, animated: true)
+            return
+        }
+        let scale: CGFloat = 2.5
+        let point = gesture.location(in: photoView)
+        let size = CGSize(width: bounds.width / scale, height: bounds.height / scale)
+        zoom(to: CGRect(x: point.x - size.width / 2, y: point.y - size.height / 2,
+                        width: size.width, height: size.height), animated: true)
     }
 }
