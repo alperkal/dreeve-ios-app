@@ -114,7 +114,7 @@ struct CircleGoalView: View {
                 .accessibilityLabel("\(goal.title), \(goal.progressText(at: entry.date)), \(goal.isComplete(at: entry.date) ? "goal reached" : goal.frequency)")
             } else { GoalWidgetEmpty(unavailable: entry.selectedID != nil) }
         }
-        .widgetURL(URL(string: "dreeve://goals"))
+        .widgetURL(URL(string: "dreeve://overview"))
         .containerBackground(DreeveTheme.background, for: .widget)
     }
 }
@@ -155,7 +155,7 @@ struct OverviewGoalsView: View {
                 }
             }
         }
-        .widgetURL(URL(string: "dreeve://goals"))
+        .widgetURL(URL(string: "dreeve://overview"))
         .containerBackground(DreeveTheme.background, for: .widget)
     }
 }

@@ -255,7 +255,7 @@ Verification includes portable tests for the two-tap state machine, 10-second ex
 
 ## Home Screen goal widgets
 
-Add **Dreeve → Goal ring** (small) for circular progress, or **Goals overview** (medium/large) for progress bars. Reaching or exceeding the target shows a navy check in a lime-to-green badge that matches the app. Tap a widget to open Goals.
+Add **Dreeve → Goal ring** (small) for circular progress, or **Goals overview** (medium/large) for progress bars. Reaching or exceeding the target shows a navy check in a lime-to-green badge that matches the app. Tap a widget to open Overview.
 
 See the [screenshot gallery](#screenshots) for small progress/completion rings and medium/large progress-bar layouts.
 

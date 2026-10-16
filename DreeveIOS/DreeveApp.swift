@@ -64,11 +64,14 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            // Return ordinary app opens to Overview; widget links can still select Goals.
+            // Return ordinary app opens to Overview.
             if phase == .background { selectedTab = 0 }
         }
         .onOpenURL { url in
-            if url.scheme == "dreeve", url.host == "goals" { selectedTab = 2 }
+            // Accept the old widget URL too, so cached widget timelines open Overview.
+            if url.scheme == "dreeve", ["overview", "goals"].contains(url.host ?? "") {
+                selectedTab = 0
+            }
         }
         .background(DreeveTheme.background)
         .task(id: "\(session.serverAddress)|\(scenePhase == .active)") {
