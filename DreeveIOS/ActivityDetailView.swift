@@ -106,14 +106,8 @@ struct ActivityDetailView: View {
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
                                 ForEach(images) { image in
-                                    AsyncImage(url: URL(string: image.url)) { photo in
-                                        photo.resizable().scaledToFill()
-                                    } placeholder: {
-                                        RoundedRectangle(cornerRadius: 12).fill(DreeveTheme.surface)
-                                            .overlay { ProgressView() }
-                                    }
-                                    .frame(width: 220, height: 150)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    ActivityPhotoView(source: image.url)
+                                        .id("\(session.serverAddress)|\(image.url)")
                                 }
                             }
                         }
@@ -344,5 +338,61 @@ struct ActivityEditorView: View {
         defer { loadingGear = false }
         do { gear = try await session.gear() }
         catch { gearError = error.localizedDescription }
+    }
+}
+
+private struct ActivityPhotoView: View {
+    @EnvironmentObject private var session: DreeveSession
+    let source: String
+    @State private var photo: UIImage?
+    @State private var isLoading = true
+    @State private var failure: String?
+    @State private var attempt = 0
+
+    private var browserURL: URL? {
+        try? session.configuredClient().activityPhotoURL(source)
+    }
+
+    var body: some View {
+        ZStack {
+            DreeveTheme.surface
+            if let photo {
+                Image(uiImage: photo).resizable().scaledToFill()
+            } else if isLoading {
+                ProgressView("Loading photo…")
+            } else {
+                VStack(spacing: 6) {
+                    Image(systemName: "photo.badge.exclamationmark").foregroundStyle(DreeveTheme.muted)
+                    Text(failure ?? "Photo unavailable.")
+                        .font(.caption).multilineTextAlignment(.center)
+                    HStack(spacing: 16) {
+                        Button("Retry") { attempt += 1 }
+                        if let browserURL { Link("Open in browser", destination: browserURL) }
+                    }
+                    .font(.caption.bold())
+                }
+                .padding(12)
+            }
+        }
+        .frame(width: 220, height: 150)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .task(id: attempt) {
+            isLoading = true
+            failure = nil
+            defer { isLoading = false }
+            do {
+                let client = try session.configuredClient()
+                let data = try await client.activityPhoto(source)
+                try Task.checkCancellation()
+                guard let decoded = UIImage(data: data) else { throw ActivityPhotoError.notImage }
+                photo = decoded
+            } catch is CancellationError {
+                failure = "Photo loading was interrupted. Try again."
+            } catch let error as URLError where error.code == .cancelled {
+                failure = "Photo loading was interrupted. Try again."
+            } catch {
+                failure = error.localizedDescription
+            }
+        }
     }
 }

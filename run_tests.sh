@@ -22,3 +22,6 @@ swiftc -module-cache-path "$test_dir/cache" Shared/GoalWidgetData.swift DreeveIO
 
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOS/Session.swift DreeveIOSTests/SessionRefreshContractTest.swift -o "$test_dir/session-refresh"
 "$test_dir/session-refresh"
+
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOSTests/ActivityPhotoContractTest.swift -o "$test_dir/activity-photos"
+"$test_dir/activity-photos"
