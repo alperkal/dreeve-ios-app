@@ -139,6 +139,15 @@ private final class OverviewRefreshProtocol: URLProtocol {
         precondition(session.insightsActivities.map(\.id) == ["run-2"] && OverviewRefreshProtocol.pages.isEmpty)
         let remainingGear = try await session.indexedActivities(gearID: "gear-shoe")
         precondition(remainingGear.isEmpty)
+        // Reopening old data offline must preserve the sync date used by streak coverage.
+        let savedDay = GoalCalendar.addingDays(-8, to: GoalCalendar.today())
+        let savedDate = GoalCalendar.formatter().date(from: savedDay)!
+        let savedRows = try await store.queryAll(instanceHash: scope)
+        _ = try await store.finalizeFullReconcile(instanceHash: scope, authoritativeActivityIds: Set(savedRows.map(\.id)), now: savedDate)
+        let offline = DreeveSession(activityIndexStore: store)
+        await offline.loadCachedActivityIndex()
+        precondition(offline.goalProgress.snapshot?.streakHistory?.throughDay == savedDay)
+        precondition(OverviewRefreshProtocol.pages.isEmpty, "Cached history reload makes no API request")
         print("Session/index tests passed: shared full/delta refresh, real API query names, local gear/location, cached relaunch, combined goals, cancellation, failure/retry, and write-through edits/deletions.")
     }
 }

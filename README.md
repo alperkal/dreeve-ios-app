@@ -223,6 +223,18 @@ Only goal definitions, archive state and favorite ranks enter the private CloudK
 - Activity summaries and per-instance sync cursors persist in a dedicated Application Support SQLite store with CloudKit disabled and backup exclusion on its directory (including SQLite sidecars). Existing goal-definition storage is unchanged. A lightweight derived goal snapshot remains in Caches for compatibility/widgets. Failed refreshes retain saved values and show stale/error status; incomplete histories are labelled. Values become stale after five minutes or a period change.
 - There is no Dreeve activity push integration or closed-app activity refresh. Foreground refresh reconciles imports/edits/deletions made elsewhere. Historical goal achievements are outside this version's scope.
 
+### Goal streaks: keep the chain
+
+Each active goal shows a numeric star indicator in Goals and the Overview favorites, for example **5 ⭐ · weeks in a row**. Each completed calendar week or month adds one star, including the current period as soon as its target is reached. An unfinished current period preserves the previous chain until it ends; a missed ended period resets the chain. Reaching a target more than once in one period still earns one star.
+
+Streaks begin with the calendar period in which the goal was created, including activities earlier in that creation period. Earlier periods do not earn stars. Editing sport, metric, target or frequency recalculates the chain using the current definition. Archiving hides a goal; restoring it recalculates from the same creation period, including intervening periods. Virtual sports count with their matching sport, just as they do for goal progress.
+
+The complete local activity index supplies a compact daily sport/count/distance history. A partial first sync or history that does not cover the last ended period shows an unavailable streak rather than awarding stars or inventing a missed period. The derived history is cached locally with goal progress, works offline after sync, and is recomputed after indexed imports, edits, deletions and full reconciliations. Old caches remain readable and gain streak history after the next successful sync. No new CloudKit records or API requests are added. Existing saved-data freshness notices also apply to streaks.
+
+Validation: simulator Debug and unsigned iPhone Release builds pass; the star row was checked in the simulator with synthetic goals.
+
+`GoalStreakContractTest.swift` covers consecutive periods, the current-period grace rule, gaps, creation boundaries, edited targets, count/distance goals, virtual sports, Monday/year/month/leap/DST boundaries, incomplete history, index aggregation/mutations, instance isolation, offline relaunch and legacy caches.
+
 ### Goal verification
 
 - Xcode 27 Debug simulator build: passed for arm64 and x86_64; unsigned simulator startup checked. Generic iPhone arm64 build also passed with signing disabled.

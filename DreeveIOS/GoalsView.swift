@@ -72,7 +72,7 @@ struct GoalsListView: View {
                     }
                 }
                 Section {
-                    Text("Tap a goal to edit, or swipe left to archive. Weeks start Monday. The current week and month follow this device’s timezone; activities keep their recorded local date. Distance targets are entered in kilometres. Creating or editing a goal includes the entire current period.")
+                    Text("Tap a goal to edit, or swipe left to archive. Weeks start Monday. The current week and month follow this device’s timezone; activities keep their recorded local date. Distance targets are entered in kilometres. Creating or editing a goal includes the entire current period. Streaks count completed periods from the goal’s creation period. An unfinished current period keeps the chain alive until it ends; edits recalculate the chain using the current rules.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -241,6 +241,7 @@ struct GoalProgressRow: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
             let value = progress.value(for: goal, now: timeline.date)
+            let streak = progress.streak(for: goal, now: timeline.date)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Label(goal.title, systemImage: activitySymbol(goal.sportType)).font(.headline)
@@ -257,6 +258,21 @@ struct GoalProgressRow: View {
                         .tint(DreeveTheme.accent)
                     if value >= goal.target { Text("Goal reached").font(.caption).foregroundStyle(DreeveTheme.accent) }
                 } else { Text("Current period progress unavailable · refresh to calculate").font(.caption).foregroundStyle(.secondary) }
+                if let streak {
+                    HStack(spacing: 6) {
+                        Text("\(streak.completedPeriods) ⭐").font(.subheadline.bold()).monospacedDigit()
+                        Text(streak.completedPeriods == 0 ? "Start your chain" :
+                            "\(streak.completedPeriods == 1 ? (goal.frequency == .weekly ? "week" : "month") : (goal.frequency == .weekly ? "weeks" : "months")) in a row")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(streak.completedPeriods > 0 ? DreeveTheme.accent : DreeveTheme.muted)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(streak.completedPeriods) consecutive completed \(goal.frequency == .weekly ? "weeks" : "months")")
+                    if streak.completedPeriods > 0 && !streak.currentPeriodCompleted {
+                        Text("Complete this \(goal.frequency == .weekly ? "week" : "month") to keep your chain.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                } else { Text("Streak unavailable · refresh activity history").font(.caption).foregroundStyle(.secondary) }
                 if progress.isStale(now: timeline.date) { Text("Saved progress may be out of date").font(.caption).foregroundStyle(.orange) }
             }
             .padding(.vertical, 6)

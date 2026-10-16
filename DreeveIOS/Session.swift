@@ -186,6 +186,11 @@ final class DreeveSession: ObservableObject {
             let revision = await store.mutationRevision(instanceHash: scope)
             let records = try await store.queryDateRange(instanceHash: scope, fromDayKeyInclusive: from, toDayKeyInclusive: to)
             let refreshed = try await store.lastSuccessfulSync(instanceHash: scope)
+            // Loading an old index offline must not advance its history coverage.
+            let historyDay = refreshed.map { min(today, GoalCalendar.today(now: $0)) }
+            let streakHistory: GoalStreakHistory?
+            if let historyDay { streakHistory = try await store.goalStreakHistory(instanceHash: scope, throughDay: historyDay) }
+            else { streakHistory = nil }
             let currentRevision = await store.mutationRevision(instanceHash: scope)
             guard generation == connectionGeneration, revision == currentRevision else { return }
             insightsActivities = records.filter { $0.localDayKey >= insightStart && $0.localDayKey <= today }.map(\.activity)
@@ -193,7 +198,7 @@ final class DreeveSession: ObservableObject {
             if let refreshed {
                 lastActivitySync = refreshed
                 goalProgress.acceptIndexSnapshot(GoalSnapshot(instanceID: scope, from: min(week.start, month.start),
-                    to: to, refreshedAt: refreshed, activities: try records.map { try GoalActivity($0.activity) }))
+                    to: to, refreshedAt: refreshed, activities: try records.map { try GoalActivity($0.activity) }, streakHistory: streakHistory))
             }
         } catch {
             if generation == connectionGeneration { activitySyncError = error.localizedDescription }

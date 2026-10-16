@@ -148,6 +148,7 @@ final class GoalProgressStore: ObservableObject {
     func changed(_ activity: DreeveActivity? = nil, deletedID: String? = nil) {
         revision += 1
         guard var value = snapshot else { return }
+        value.streakHistory = nil // Rebuilt from the authoritative index after this mutation.
         if let deletedID { value.activities.removeAll { $0.id == deletedID } }
         if let activity {
             value.activities.removeAll { $0.id == activity.id }
@@ -228,6 +229,11 @@ final class GoalProgressStore: ObservableObject {
         let period = GoalCalendar.period(goal.frequency, now: now)
         guard let snapshot, snapshot.instanceID == goal.instanceID, snapshot.covers(period) else { return nil }
         return GoalEngine.value(sport: goal.sportType, metric: goal.metric, period: period, activities: snapshot.activities)
+    }
+    func streak(for goal: TrainingGoal, now: Date) -> GoalStreak? {
+        guard let snapshot, snapshot.instanceID == goal.instanceID, let history = snapshot.streakHistory else { return nil }
+        return GoalStreakEngine.streak(sport: goal.sportType, metric: goal.metric, frequency: goal.frequency,
+            target: goal.target, createdAt: goal.createdAt, history: history, now: now)
     }
     func isStale(now: Date) -> Bool {
         guard let snapshot else { return true }

@@ -353,6 +353,29 @@ public actor ActivityIndexStore {
         try context.save()
     }
 
+    /// Aggregate full, authoritative history without carrying routes/photos/payloads
+    /// into the derived Goals cache. A partial backfill must not award a streak.
+    func goalStreakHistory(instanceHash: String, throughDay: String) throws -> GoalStreakHistory? {
+        guard try cursorStatus(instanceHash: instanceHash).completed else { return nil }
+        let context = ModelContext(container)
+        var descriptor = FetchDescriptor<IndexedActivity>(predicate: #Predicate {
+            $0.instanceHash == instanceHash && $0.localDayKey <= throughDay
+        })
+        descriptor.propertiesToFetch = [\.localDayKey, \.sportType, \.distanceMeters]
+        var days: [String: GoalStreakDay] = [:]
+        for activity in try context.fetch(descriptor) where activity.localDayKey != "0000-00-00" {
+            let sport = GoalEngine.goalSport(activity.sportType)
+            let key = activity.localDayKey + "|" + sport
+            var day = days[key] ?? GoalStreakDay(day: activity.localDayKey, sport: sport, count: 0, meters: 0)
+            day.count += 1
+            day.meters += activity.distanceMeters.isFinite ? max(0, activity.distanceMeters) : 0
+            days[key] = day
+        }
+        return GoalStreakHistory(throughDay: throughDay, days: days.values.sorted {
+            $0.day == $1.day ? $0.sport < $1.sport : $0.day < $1.day
+        })
+    }
+
     // MARK: - Instant Local Queries
 
     public func queryByGear(instanceHash: String, gearId: String) throws -> [ActivitySummaryRecord] {

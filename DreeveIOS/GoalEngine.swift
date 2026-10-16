@@ -136,5 +136,67 @@ struct GoalSnapshot: Codable, Equatable {
     let to: String
     let refreshedAt: Date
     var activities: [GoalActivity]
+    var streakHistory: GoalStreakHistory? = nil
     func covers(_ period: GoalPeriod) -> Bool { from <= period.start && to >= period.lastDay }
+}
+
+// Compact derived history stays local. Definitions remain the only CloudKit data.
+struct GoalStreakDay: Codable, Equatable {
+    let day: String
+    let sport: String
+    var count: Int
+    var meters: Double
+}
+
+struct GoalStreakHistory: Codable, Equatable {
+    let throughDay: String
+    let days: [GoalStreakDay]
+}
+
+struct GoalStreak: Equatable {
+    let completedPeriods: Int
+    let currentPeriodCompleted: Bool
+}
+
+enum GoalStreakEngine {
+    /// An in-progress current period is grace time. Only a missed, ended period
+    /// breaks the chain. No achievements are awarded before the creation period.
+    static func streak(sport: String, metric: GoalMetric, frequency: GoalFrequency, target: Double,
+                       createdAt: Date, history: GoalStreakHistory, now: Date = .now,
+                       timeZone: TimeZone = .current) -> GoalStreak? {
+        guard target.isFinite, target > 0, createdAt <= now else { return nil }
+        let current = GoalCalendar.period(frequency, now: now, timeZone: timeZone)
+        let first = GoalCalendar.period(frequency, now: createdAt, timeZone: timeZone)
+        // A sync in this period confirms all ended periods. An old offline index
+        // cannot prove that an unfinished prior period was ultimately missed.
+        guard history.throughDay >= current.start else { return nil }
+        let selected = GoalEngine.goalSport(sport)
+        var totals: [String: Double] = [:]
+        let formatter = GoalCalendar.formatter()
+        let today = GoalCalendar.today(now: now, timeZone: timeZone)
+        let calendar = GoalCalendar.calendar
+        func periodStart(_ date: Date) -> String {
+            if frequency == .monthly { return String(formatter.string(from: date).prefix(7)) + "-01" }
+            let weekday = calendar.component(.weekday, from: date)
+            return formatter.string(from: calendar.date(byAdding: .day, value: -((weekday + 5) % 7), to: date)!)
+        }
+        for day in history.days where day.day >= first.start && day.day <= min(history.throughDay, today) && GoalEngine.goalSport(day.sport) == selected {
+            guard let date = formatter.date(from: day.day), formatter.string(from: date) == day.day else { continue }
+            let start = periodStart(date)
+            let amount = metric == .count ? Double(max(0, day.count)) : (day.meters.isFinite ? max(0, day.meters) : 0)
+            totals[start, default: 0] += amount
+        }
+        let complete = (totals[current.start] ?? 0) >= target
+        var length = complete ? 1 : 0
+        var start = current.start
+        while start > first.start {
+            let day = GoalCalendar.addingDays(-1, to: start)
+            guard let date = formatter.date(from: day) else { break }
+            let previous = periodStart(date)
+            guard (totals[previous] ?? 0) >= target else { break }
+            length += 1
+            start = previous
+        }
+        return GoalStreak(completedPeriods: length, currentPeriodCompleted: complete)
+    }
 }
