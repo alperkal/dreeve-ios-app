@@ -66,10 +66,16 @@ struct DashboardView: View {
                                     .cornerRadius(5)
                                 }
                             }
-                            .chartYAxis { AxisMarks(position: .leading) }
+                            .chartYAxis {
+                                AxisMarks(position: .leading) {
+                                    AxisGridLine()
+                                    AxisTick()
+                                    AxisValueLabel(anchor: .trailing)
+                                }
+                            }
                             .chartXAxis {
                                 AxisMarks(values: .stride(by: .day)) { _ in
-                                    AxisValueLabel(format: .dateTime.weekday(.narrow))
+                                    AxisValueLabel(format: .dateTime.weekday(.narrow), anchor: .top)
                                 }
                             }
                             .frame(height: 150)
