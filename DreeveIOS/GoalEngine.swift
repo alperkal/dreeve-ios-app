@@ -102,11 +102,23 @@ enum GoalEngine {
         let canonical = parts.string!
         return SHA256.hash(data: Data(canonical.utf8)).map { String(format: "%02x", $0) }.joined()
     }
+    /// Dreeve's virtual sports share goal progress with their real-world equivalents.
+    /// Keep stored activity types intact so edits, cached records and API data retain fidelity.
+    static func goalSport(_ sport: String) -> String {
+        switch sport {
+        case "VirtualRun": return "Run"
+        case "VirtualRide": return "Ride"
+        case "VirtualRow": return "Rowing"
+        default: return sport
+        }
+    }
+
     static func value(sport: String, metric: GoalMetric, period: GoalPeriod,
                       activities: [GoalActivity]) -> Double {
         // Latest occurrence wins, including edited sport/date/distance.
         let unique = Dictionary(activities.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
-        return unique.values.filter { $0.sport == sport && period.contains($0.localDay) }
+        let selectedSport = goalSport(sport)
+        return unique.values.filter { goalSport($0.sport) == selectedSport && period.contains($0.localDay) }
             .reduce(0) { $0 + (metric == .count ? 1 : $1.meters) }
     }
 }

@@ -154,9 +154,11 @@ struct GoalEditorView: View {
         return value * (metric == .distance ? 1000 : 1)
     }
     private var sports: [String] {
-        Array(Set(["Run", "Walk", "Ride", "Hike", "Swim", "VirtualRide", "VirtualRun", "TrailRun"] +
-                  session.activities.map(\.sportType) + session.insightsActivities.map(\.sportType))).sorted()
+        let values = ["Run", "Walk", "Ride", "Hike", "Swim", "Rowing", "TrailRun"] +
+            session.activities.map(\.sportType) + session.insightsActivities.map(\.sportType)
+        return Array(Set(values.map(GoalEngine.goalSport))).sorted()
     }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -167,6 +169,8 @@ struct GoalEditorView: View {
                     Menu("Choose a sport") {
                         ForEach(sports, id: \.self) { item in Button(item) { sport = item } }
                     }
+                    Text("Includes real and virtual versions of the selected sport.")
+                        .font(.caption).foregroundStyle(.secondary)
                     Picker("Measure", selection: $metric) {
                         ForEach(GoalMetric.allCases) { Text($0.label).tag($0) }
                     }

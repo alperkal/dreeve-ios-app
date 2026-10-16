@@ -11,6 +11,9 @@ swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/Goa
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOS/HealthSyncCore.swift DreeveIOS/HealthFITExporter.swift DreeveIOSTests/HealthSyncContractTest.swift -o "$test_dir/health"
 "$test_dir/health"
 
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOSTests/GoalSportMatchingTest.swift -o "$test_dir/goal-sports"
+"$test_dir/goal-sports"
+
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOS/GoalStore.swift DreeveIOSTests/GoalsContractTest.swift -o "$test_dir/goals"
 "$test_dir/goals"
 

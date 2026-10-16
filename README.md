@@ -185,6 +185,7 @@ Only goal definitions, archive state and favorite ranks enter the private CloudK
 
 ### Progress and calendar rules
 
+- Goals combine matching real and virtual sports: `Run` + `VirtualRun`, `Ride` + `VirtualRide`, and `Rowing` + `VirtualRow`, for activity count and distance. For example, a 6 km outdoor run and a 5 km virtual run contribute 11 km and two activities. Existing goals using either name share the combined total; other sport types remain distinct.
 - Creation time is metadata, never an activity cutoff. A Thursday goal includes Monday–Thursday activity; editing sport/metric/frequency/target immediately recomputes against the whole current period.
 - Gregorian weeks run Monday 00:00 through the next Monday exclusively; months run from day 1 to the next month's day 1 exclusively. The device's current timezone determines **today** and therefore the active week/month. Activity membership uses the date portion of `startDateLocal`, preserving its recorded wall-clock date without converting timezone suffixes. Date arithmetic uses floating calendar components to avoid daylight-saving shifts.
 - The [activity search API](https://docs.dreeve.app/api/operations/listactivities/) documents inclusive `filters[from]`/`filters[to]` date filters, page numbers starting at 1, maximum page size 100, and `pagination.totalPages`. It does not explicitly specify the filter timezone. The app fetches one extra day at each end and applies the exact local-date period itself.
