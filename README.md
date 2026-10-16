@@ -73,6 +73,18 @@ App screens are captured from the iPhone 17 simulator using demo activities and 
 - Activity photos use the configured HTTPS Dreeve address for local `/files/activities/` links, including deployments under a subpath. External HTTPS image links keep their original host. Tap a loaded photo to open it full screen, pinch to zoom, drag to pan, or double tap to toggle zoom; swipe down when zoomed out or use the close button to return to the activity. Failed loads show an explanation, Retry, and Open in browser instead of an endless spinner. Website-protected photos still require website access: the v1 API token does not sign in to Dreeve’s separate website session.
 - The updated project builds for the generic iOS Simulator destination in Xcode. Interactive simulator operation and a live authenticated Dreeve integration test remain unverified.
 
+## Activity share cards
+
+Open an activity and tap **Share activity card**. Choose a transparent sticker, dark map poster, or photo background, then select Story (1080 × 1920) or Square (1080 × 1080). The live preview includes the route, activity date/title, distance, sport-appropriate pace or speed, duration and assigned gear with its cached thumbnail.
+
+**Copy sticker / Copy PNG** preserves the PNG image, including transparency for stickers. **Share image** opens the native share sheet with a PNG file. Photo backgrounds are chosen with the system photo picker; when a foreground subject can be detected, the route can be placed behind it. Subject detection happens on device. Photos and generated cards are not uploaded to Dreeve or stored in CloudKit. Temporary sharing files are removed when the share sheet closes.
+
+Dark maps use Apple's native snapshot service and retain its attribution. If the map is unavailable, the card falls back to a route-only background. Indoor activities and missing or malformed routes still produce telemetry cards. The activity's local date is preserved without a timezone conversion.
+
+Implementation: `RouteGeometryProjector.swift`, `ShareCardRenderer.swift` and `ShareCardSheetView.swift`. The standalone `ShareCardContractTest.swift` suite covers polyline decoding, malformed input, date-line crossings, Mercator aspect ratio, degenerate routes, telemetry and export dimensions, and runs with `./run_tests.sh`.
+
+Validation: full standalone regression suite, simulator Debug build and unsigned iPhone Release build pass. Simulator checks verified Story/Square PNG dimensions, transparent sticker corners, native dark-map output with visible attribution, synthetic subject/route compositing and the customization screen. Real-photo subject detection and receiving apps’ copy/share behavior still need an iPhone check.
+
 ## Code map
 
 - `DreeveApp.swift`: launch and navigation

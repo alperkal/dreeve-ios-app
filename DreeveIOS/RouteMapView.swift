@@ -37,34 +37,7 @@ struct RouteMapView: View {
 }
 
 enum PolylineDecoder {
-    // Google Encoded Polyline format, E5 precision.
     static func decode(_ encoded: String) -> [CLLocationCoordinate2D] {
-        let bytes = Array(encoded.utf8)
-        var index = 0
-        var latitude = 0
-        var longitude = 0
-        var coordinates: [CLLocationCoordinate2D] = []
-
-        func next() -> Int? {
-            var result = 0
-            var shift = 0
-            while index < bytes.count {
-                let byte = Int(bytes[index]) - 63
-                index += 1
-                guard byte >= 0 && byte <= 63 && shift <= 30 else { return nil }
-                result |= (byte & 0x1F) << shift
-                if byte < 0x20 { return (result & 1) != 0 ? ~(result >> 1) : result >> 1 }
-                shift += 5
-            }
-            return nil
-        }
-
-        while index < bytes.count {
-            guard let lat = next(), let lon = next() else { break }
-            latitude += lat
-            longitude += lon
-            coordinates.append(CLLocationCoordinate2D(latitude: Double(latitude) / 1e5, longitude: Double(longitude) / 1e5))
-        }
-        return coordinates
+        RouteGeometryProjector.decodePolyline(encoded)
     }
 }

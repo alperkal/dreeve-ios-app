@@ -18,6 +18,7 @@ struct ActivityDetailView: View {
     @State private var errorMessage: String?
     @State private var gpxFile: URL?
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var showingShareCardSheet = false
 
     var body: some View {
         ScrollView {
@@ -112,6 +113,11 @@ struct ActivityDetailView: View {
                             }
                         }
                     }
+                    Button { showingShareCardSheet = true } label: {
+                        Label("Share activity card", systemImage: "sparkles.rectangle.stack")
+                    }
+                    .buttonStyle(.borderedProminent).tint(DreeveTheme.accent).foregroundStyle(DreeveTheme.background)
+
                     HStack(spacing: 12) {
                         PhotosPicker(selection: $selectedPhoto, matching: .images) {
                             Label("Add photo", systemImage: "photo.badge.plus")
@@ -161,6 +167,15 @@ struct ActivityDetailView: View {
             }
         }
         .task { await load() }
+        .sheet(isPresented: $showingShareCardSheet) {
+            if let activity {
+                ShareCardSheetView(telemetry: ShareCardTelemetry(title: activity.name, sportType: activity.sportType,
+                    dateText: String(activity.startDateLocal.prefix(10)), distanceMeters: activity.distanceInMeter ?? 0,
+                    movingTimeSeconds: activity.movingTimeInSeconds ?? 0, elevationGainMeters: activity.elevationInMeter ?? 0,
+                    gearName: gear.first { $0.id == activity.gearId }?.name, encodedPolyline: activity.encodedPolyline),
+                    gearThumbnail: shareGearThumbnail(for: activity))
+            }
+        }
         .sheet(isPresented: $isEditing) {
             if let activity {
                 ActivityEditorView(activity: activity) { edited in
@@ -195,6 +210,12 @@ struct ActivityDetailView: View {
                 selectedPhoto = nil
             }
         }
+    }
+
+    private func shareGearThumbnail(for activity: DreeveActivity) -> UIImage? {
+        guard let id = activity.gearId, let client = try? session.configuredClient(),
+              let data = try? GearImageCache().load(instanceID: GoalEngine.instanceID(client.baseURL), gearID: id) else { return nil }
+        return UIImage(data: data)
     }
 
     private func load() async {

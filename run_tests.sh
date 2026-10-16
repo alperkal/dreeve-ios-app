@@ -31,3 +31,6 @@ swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/Goa
 
 swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/GoalEngine.swift DreeveIOS/APIClient.swift DreeveIOSTests/ActivityPhotoContractTest.swift -o "$test_dir/activity-photos"
 "$test_dir/activity-photos"
+
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/RouteGeometryProjector.swift DreeveIOS/ShareCardRenderer.swift DreeveIOSTests/ShareCardContractTest.swift -o "$test_dir/share-cards"
+"$test_dir/share-cards"
