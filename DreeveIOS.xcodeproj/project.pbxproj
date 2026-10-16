@@ -19,6 +19,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXBuildFile section */
+		63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AB17A0059D9E34184D5C2B; };
+		53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7425E3C844D88C7D999C44; };
+		C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDBEE34FB3BE91EBADAB2D; };
 		67FE38706CBA8286E819FDE1 /* ShareCardSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636D0D017209B822AC039807; };
 		6FE721B27E1D989D980EDAE3 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343B7C0E6708F10C93E612E; };
 		1F9E7DACFA5FC66AAAEA4F92 /* RouteGeometryProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CD8F2F76490230023C5EA0; };
@@ -57,6 +60,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
+		1B7425E3C844D88C7D999C44 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
+		67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachContextBuilder.swift; sourceTree = "<group>"; };
 		636D0D017209B822AC039807 /* ShareCardSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardSheetView.swift; sourceTree = "<group>"; };
 		7343B7C0E6708F10C93E612E /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
 		C9CD8F2F76490230023C5EA0 /* RouteGeometryProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteGeometryProjector.swift; sourceTree = "<group>"; };
@@ -157,6 +163,9 @@
 				C9CD8F2F76490230023C5EA0 /* RouteGeometryProjector.swift */,
 				7343B7C0E6708F10C93E612E /* ShareCardRenderer.swift */,
 				636D0D017209B822AC039807 /* ShareCardSheetView.swift */,
+				A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */,
+				1B7425E3C844D88C7D999C44 /* CoachEngine.swift */,
+				67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */,
 				99609C103905761AB1D0C685 /* APIClient.swift */,
 				6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */,
 				CDF1376147E58909AAA77389 /* ActivityDetailView.swift */,
@@ -269,6 +278,9 @@
 				1F9E7DACFA5FC66AAAEA4F92 /* RouteGeometryProjector.swift in Sources */,
 				6FE721B27E1D989D980EDAE3 /* ShareCardRenderer.swift in Sources */,
 				67FE38706CBA8286E819FDE1 /* ShareCardSheetView.swift in Sources */,
+				63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */,
+				53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */,
+				C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */,
 				B66496CAB75B3E11A7D6F9AC /* APIClient.swift in Sources */,
 				619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */,
 				E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */,

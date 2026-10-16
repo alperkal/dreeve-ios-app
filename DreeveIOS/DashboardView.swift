@@ -29,7 +29,10 @@ struct DashboardView: View {
                     .padding(.top, 12)
 
                     if session.showsActivityIndexStatus { ActivityIndexStatusView() }
-                    if persistence.container != nil { FavoriteGoalsView() }
+                    if persistence.container != nil {
+                        FavoriteGoalsView()
+                        CoachGoalsSection()
+                    } else { CoachDashboardHost(goals: []) }
 
                     Text("This week")
                         .font(.title3.weight(.bold))
