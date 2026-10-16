@@ -28,6 +28,7 @@ struct DashboardView: View {
                     }
                     .padding(.top, 12)
 
+                    if session.showsActivityIndexStatus { ActivityIndexStatusView() }
                     if persistence.container != nil { FavoriteGoalsView() }
 
                     Text("This week")
@@ -119,10 +120,10 @@ struct DashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { Task { await session.refreshInsights(); await session.refreshGoals() } } label: {
+                    Button { Task { await session.refreshInsights(forceFullReconcile: true) } } label: {
                         Image(systemName: "arrow.clockwise")
                     }
-                    .disabled(session.isLoadingInsights)
+                    .disabled(session.isLoadingInsights || session.isSyncingActivityIndex)
                 }
             }
             .overlay {
@@ -131,9 +132,9 @@ struct DashboardView: View {
                 }
             }
             .task {
-                if !session.didLoadInsights { await session.refreshInsights(); await session.refreshGoals() }
+                if !session.didLoadInsights { await session.refreshInsights() }
             }
-            .refreshable { await session.refreshInsights(); await session.refreshGoals() }
+            .refreshable { await session.refreshInsights(forceFullReconcile: true) }
             .alert("Request failed", isPresented: Binding(get: { session.errorMessage != nil }, set: { if !$0 { session.errorMessage = nil } })) {
                 Button("OK") { session.errorMessage = nil }
             } message: {

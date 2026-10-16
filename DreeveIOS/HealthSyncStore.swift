@@ -106,7 +106,7 @@ final class HealthSyncStore: ObservableObject {
                 }
             }
             await session.reloadActivities()
-            await session.refreshGoals()
+            await session.refreshGoals(forceFullReconcile: true)
         } catch { errorMessage = error.localizedDescription }
     }
 
@@ -149,6 +149,7 @@ final class HealthSyncStore: ObservableObject {
                 do {
                     let receipt = try await client.uploadActivity(data: data, filename: workout.filename)
                     guard receipt.status == "queued" else { throw APIError.unexpectedResponse }
+                    session.notePendingImport(filename: workout.filename)
                     pending.state = .queued
                     pending.message = receipt.message
                     try save(pending)
@@ -165,7 +166,7 @@ final class HealthSyncStore: ObservableObject {
             try await reconcile(client: client, server: server)
             try ensureServer(session, server: server)
             await session.reloadActivities()
-            await session.refreshGoals()
+            await session.refreshGoals(forceFullReconcile: true)
         } catch { errorMessage = error.localizedDescription }
     }
 

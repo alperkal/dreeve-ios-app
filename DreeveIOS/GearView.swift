@@ -232,32 +232,6 @@ private struct RunningShoeGlyph: View {
     }
 }
 
-@MainActor
-final class GearActivitiesStore: ObservableObject {
-    @Published private(set) var activities: [DreeveActivity] = []
-    @Published private(set) var isLoading = false
-    @Published private(set) var error: String?
-    private var requestID = UUID()
-    private var scope = ""
-
-    func reset() { requestID = UUID(); activities = []; isLoading = false; error = nil }
-    func load(client: DreeveAPIClient, gearID: String) async {
-        let key = GoalEngine.instanceID(client.baseURL) + "|" + gearID
-        if key != scope { activities = []; scope = key }
-        let request = UUID()
-        requestID = request
-        isLoading = true; error = nil
-        defer { if requestID == request { isLoading = false } }
-        do {
-            let values = try await client.activitiesForGear(gearID)
-            guard requestID == request, !Task.isCancelled else { return }
-            activities = values
-        } catch {
-            if requestID == request, !Task.isCancelled { self.error = error.localizedDescription }
-        }
-    }
-}
-
 struct GearImageSearchSettingsView: View {
     @AppStorage("gear.imageSearchURL") private var endpoint = GearImageSearchClient.defaultEndpoint
     var body: some View {

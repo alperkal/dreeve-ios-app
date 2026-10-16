@@ -213,6 +213,17 @@ final class GoalProgressStore: ObservableObject {
             }
         } while refreshAgain && !Task.isCancelled
     }
+    func beginIndexRefresh() { isRefreshing = true }
+    func finishIndexRefresh(error message: String?) {
+        isRefreshing = false
+        error = message.map { "Progress refresh failed · showing saved data. " + $0 }
+    }
+    func acceptIndexSnapshot(_ value: GoalSnapshot) {
+        guard value.instanceID == instanceID, snapshot != value else { return }
+        snapshot = value
+        persist(value)
+    }
+
     func value(for goal: TrainingGoal, now: Date) -> Double? {
         let period = GoalCalendar.period(goal.frequency, now: now)
         guard let snapshot, snapshot.instanceID == goal.instanceID, snapshot.covers(period) else { return nil }

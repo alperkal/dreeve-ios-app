@@ -18,18 +18,18 @@ struct Pagination: Decodable {
     let totalPages: Int
 }
 
-struct ActivityLocation: Decodable {
+struct ActivityLocation: Codable, Sendable {
     let countryCode: String?
     let state: String?
     let city: String?
 }
 
-struct ActivityImage: Identifiable, Decodable {
+struct ActivityImage: Identifiable, Codable, Sendable {
     let id: String
     let url: String
 }
 
-struct DreeveActivity: Identifiable, Decodable {
+struct DreeveActivity: Identifiable, Codable, Sendable {
     let id: String
     let name: String
     let description: String?

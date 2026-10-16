@@ -65,6 +65,13 @@ enum GoalCalendar {
         guard let date = parser.date(from: prefix), parser.string(from: date) == prefix else { return nil }
         return String(prefix.prefix(10))
     }
+    static func today(now: Date = .now, timeZone: TimeZone = .current) -> String {
+        var deviceCalendar = calendar
+        deviceCalendar.timeZone = timeZone
+        let components = deviceCalendar.dateComponents([.year, .month, .day], from: now)
+        return formatter().string(from: calendar.date(from: components)!)
+    }
+
     static func addingDays(_ count: Int, to day: String) -> String {
         let formatter = formatter()
         let date = formatter.date(from: day)!
@@ -123,7 +130,7 @@ enum GoalEngine {
     }
 }
 
-struct GoalSnapshot: Codable {
+struct GoalSnapshot: Codable, Equatable {
     let instanceID: String
     let from: String
     let to: String

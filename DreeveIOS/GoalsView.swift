@@ -82,7 +82,7 @@ struct GoalsListView: View {
                     Button("New goal", systemImage: "plus") { creating = true }
                 }
             }
-            .refreshable { await session.refreshGoals(); await persistence.checkAccount() }
+            .refreshable { await session.refreshGoals(forceFullReconcile: true); await persistence.checkAccount() }
             .sheet(isPresented: $creating) { GoalEditorView(goal: nil, instanceID: progress.instanceID) }
             .sheet(item: $editing) { GoalEditorView(goal: $0, instanceID: progress.instanceID) }
             .alert("Could not save goal", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {

@@ -19,6 +19,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXBuildFile section */
+		92A1DB1CEF608F2D84EF6D72 /* ActivitySyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E45613F0140D53AF32BCA; };
+		171C99C39DFB93ABA4B8F83F /* ActivityIndexStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C50CC4BAD79F93B1490373BA; };
 		03D5273652825B25C2F553A5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595A787F0534A2FB5A149FEF /* KeychainStore.swift */; };
 		157EC19375B2FF8F781EC900 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48327B073CAD0CAA6233C59 /* RouteMapView.swift */; };
 		3894EC9353AF6267D9A04E96 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D07B68E143C56935BEFD76F9 /* Assets.xcassets */; };
@@ -52,6 +54,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		086E45613F0140D53AF32BCA /* ActivitySyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySyncEngine.swift; sourceTree = "<group>"; };
+		C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndexStore.swift; sourceTree = "<group>"; };
 		08C29F9AAE02BB9BB0C95E3A /* DreeveIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DreeveIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		10D630ADBBEA7FFCED795502 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		2B8399F61B31F2F97A3A53B3 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -142,6 +146,8 @@
 				8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */,
 				831CCA044730B4857B49325A /* HealthSyncStore.swift */,
 				224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */,
+				C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */,
+				086E45613F0140D53AF32BCA /* ActivitySyncEngine.swift */,
 				99609C103905761AB1D0C685 /* APIClient.swift */,
 				6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */,
 				CDF1376147E58909AAA77389 /* ActivityDetailView.swift */,
@@ -249,6 +255,8 @@
 				896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */,
 				071C886151785B474B8DA1FF /* GoalStore.swift in Sources */,
 				E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */,
+				171C99C39DFB93ABA4B8F83F /* ActivityIndexStore.swift in Sources */,
+				92A1DB1CEF608F2D84EF6D72 /* ActivitySyncEngine.swift in Sources */,
 				B66496CAB75B3E11A7D6F9AC /* APIClient.swift in Sources */,
 				619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */,
 				E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */,

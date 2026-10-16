@@ -2,7 +2,9 @@ import SwiftUI
 
 struct ActivitiesView: View {
     @EnvironmentObject private var session: DreeveSession
-    @StateObject private var filtered = GearActivitiesStore()
+    @State private var gearActivities: [DreeveActivity] = []
+    @State private var gearActivityError: String?
+    @State private var cachedGearKey = ""
     @State private var search = ""
     @State private var selectedGearID: String?
     @State private var gearChoices: [DreeveGear]
@@ -18,8 +20,11 @@ struct ActivitiesView: View {
         guard let selectedGearID else { return nil }
         return gearChoices.first { $0.id == selectedGearID }?.name ?? selectedGearID
     }
-    private var source: [DreeveActivity] { selectedGearID == nil ? session.activities : filtered.activities }
-    private var isLoading: Bool { selectedGearID == nil ? session.isLoadingActivities : filtered.isLoading }
+    private var source: [DreeveActivity] {
+        selectedGearID == nil ? session.activities :
+            (cachedGearKey == session.serverAddress + "|" + (selectedGearID ?? "") ? gearActivities : [])
+    }
+    private var isLoading: Bool { selectedGearID == nil ? session.isLoadingActivities : session.isSyncingActivityIndex }
     private var visibleActivities: [DreeveActivity] {
         guard !search.isEmpty else { return source }
         return source.filter { activity in
@@ -45,11 +50,11 @@ struct ActivitiesView: View {
                     }
                 }
             }
-            if let error = filtered.error, selectedGearID != nil {
+            if let error = gearActivityError, selectedGearID != nil {
                 Section { Text(error).font(.caption).foregroundStyle(.orange) }
             }
             Section {
-                if isLoading && selectedGearID != nil { ProgressView("Finding activities for this gear…") }
+                if selectedGearID != nil && session.showsActivityIndexStatus { ActivityIndexStatusView() }
                 if source.isEmpty && !isLoading {
                     EmptyMessage(title: "No activities", message: selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear.", symbol: "figure.run")
                         .listRowBackground(Color.clear)
@@ -101,18 +106,35 @@ struct ActivitiesView: View {
         }
         .task(id: session.serverAddress) { await loadGearChoices() }
         .task(id: session.serverAddress + "|" + (selectedGearID ?? "all")) {
-            if selectedGearID != nil { await reload() }
-            else { filtered.reset(); if session.activities.isEmpty { await session.reloadActivities() } }
+            if selectedGearID != nil { await reload(forceFullReconcile: false) }
+            else { gearActivities = []; gearActivityError = nil; if session.activities.isEmpty { await session.reloadActivities() } }
+        }
+        .task(id: "\(session.serverAddress)|\(selectedGearID ?? "all")|\(session.activityIndexRevision)") {
+            await loadCachedGear()
         }
         .refreshable { await reload() }
         .alert("Request failed", isPresented: Binding(get: { session.errorMessage != nil }, set: { if !$0 { session.errorMessage = nil } })) {
             Button("OK") { session.errorMessage = nil }
         } message: { Text(session.errorMessage ?? "Unknown error") }
     }
-    private func reload() async {
-        if let selectedGearID {
-            do { await filtered.load(client: try session.configuredClient(), gearID: selectedGearID) }
-            catch { session.errorMessage = error.localizedDescription }
+    private func loadCachedGear() async {
+        guard let gearID = selectedGearID else { return }
+        let server = session.serverAddress
+        do {
+            let values = try await session.indexedActivities(gearID: gearID)
+            guard server == session.serverAddress, selectedGearID == gearID, !Task.isCancelled else { return }
+            gearActivities = values
+            cachedGearKey = server + "|" + gearID
+            gearActivityError = nil
+        } catch {
+            if !(error is CancellationError), server == session.serverAddress { gearActivityError = error.localizedDescription }
+        }
+    }
+    private func reload(forceFullReconcile: Bool = true) async {
+        if selectedGearID != nil {
+            await loadCachedGear()
+            await session.syncActivityIndex(forceFullReconcile: forceFullReconcile)
+            await loadCachedGear()
         } else { await session.reloadActivities() }
     }
     private func loadGearChoices() async {
@@ -149,5 +171,25 @@ struct ActivityRow: View {
             }
             Spacer(minLength: 0)
         }.padding(.vertical, 7)
+    }
+}
+
+
+struct ActivityIndexStatusView: View {
+    @EnvironmentObject private var session: DreeveSession
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if session.isSyncingActivityIndex { ProgressView("Updating activities…") }
+            if !session.activityIndexComplete {
+                Text("Activity history is still downloading. Saved results may be incomplete.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if let error = session.activitySyncError {
+                Text("Could not update activities. Showing saved data. \(error)")
+                    .font(.caption).foregroundStyle(.orange)
+            } else if let last = session.lastActivitySync, Date.now.timeIntervalSince(last) > 300 {
+                Text("Showing saved activities. Pull to refresh.").font(.caption).foregroundStyle(.secondary)
+            }
+        }
     }
 }
