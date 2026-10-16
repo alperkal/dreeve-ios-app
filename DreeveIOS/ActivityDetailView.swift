@@ -413,7 +413,7 @@ private struct ActivityPhotoViewer: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
-            ZoomableActivityPhoto(photo: photo).ignoresSafeArea()
+            ZoomableActivityPhoto(photo: photo, onSwipeDown: { dismiss() }).ignoresSafeArea()
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 18, weight: .semibold))
@@ -430,23 +430,31 @@ private struct ActivityPhotoViewer: View {
 
 private struct ZoomableActivityPhoto: UIViewRepresentable {
     let photo: UIImage
+    let onSwipeDown: () -> Void
 
     func makeUIView(context: Context) -> ActivityPhotoScrollView {
-        ActivityPhotoScrollView(photo: photo)
+        ActivityPhotoScrollView(photo: photo, onSwipeDown: onSwipeDown)
     }
-    func updateUIView(_ uiView: ActivityPhotoScrollView, context: Context) {}
+    func updateUIView(_ uiView: ActivityPhotoScrollView, context: Context) {
+        uiView.onSwipeDown = onSwipeDown
+    }
 }
 
 private final class ActivityPhotoScrollView: UIScrollView, UIScrollViewDelegate {
     private let photoView = UIImageView()
     private var viewportSize = CGSize.zero
+    private var canDismissPan = false
+    var onSwipeDown: () -> Void
 
-    init(photo: UIImage) {
+    init(photo: UIImage, onSwipeDown: @escaping () -> Void) {
+        self.onSwipeDown = onSwipeDown
         super.init(frame: .zero)
         delegate = self
         minimumZoomScale = 1
         maximumZoomScale = 5
         bouncesZoom = true
+        alwaysBounceVertical = true
+        panGestureRecognizer.addTarget(self, action: #selector(dismissPhotoWithPan(_:)))
         showsHorizontalScrollIndicator = false
         showsVerticalScrollIndicator = false
         contentInsetAdjustmentBehavior = .never
@@ -455,7 +463,7 @@ private final class ActivityPhotoScrollView: UIScrollView, UIScrollViewDelegate 
         photoView.contentMode = .scaleAspectFit
         photoView.isAccessibilityElement = true
         photoView.accessibilityLabel = "Activity photo"
-        photoView.accessibilityHint = "Pinch to zoom, drag to move, or double tap to toggle zoom."
+        photoView.accessibilityHint = "Pinch to zoom, drag to move, double tap to toggle zoom, or swipe down when zoomed out to close."
         addSubview(photoView)
         let doubleTap = UITapGestureRecognizer(target: self, action: #selector(toggleZoom(_:)))
         doubleTap.numberOfTapsRequired = 2
@@ -477,6 +485,29 @@ private final class ActivityPhotoScrollView: UIScrollView, UIScrollViewDelegate 
     }
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? { photoView }
+
+    @objc private func dismissPhotoWithPan(_ gesture: UIPanGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            canDismissPan = zoomScale <= minimumZoomScale + 0.01 && !isZooming && gesture.numberOfTouches == 1
+        case .changed:
+            if zoomScale > minimumZoomScale + 0.01 || isZooming || gesture.numberOfTouches > 1 {
+                canDismissPan = false
+            }
+        case .ended:
+            defer { canDismissPan = false }
+            guard canDismissPan, zoomScale <= minimumZoomScale + 0.01 else { return }
+            let distance = gesture.translation(in: self)
+            let velocity = gesture.velocity(in: self)
+            let downward = distance.y > abs(distance.x) * 1.2
+            let deliberate = distance.y >= 100 || (distance.y >= 50 && velocity.y >= 700)
+            if downward && deliberate { onSwipeDown() }
+        case .cancelled, .failed:
+            canDismissPan = false
+        default:
+            break
+        }
+    }
 
     @objc private func toggleZoom(_ gesture: UITapGestureRecognizer) {
         guard zoomScale <= minimumZoomScale else {
