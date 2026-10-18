@@ -89,17 +89,25 @@ Implementation: `CoachContextBuilder.swift`, `CoachEngine.swift` and `CoachCardV
 
 Validation: the full regression suite, coach contract tests, simulator Debug build and unsigned iPhone Release build pass. An isolated simulator run with synthetic activity/goal data exercised the actual FoundationModels curation path and verified the card layout. Physical-iPhone availability, latency and foreground/offline interaction remain device checks.
 
+## Activity website
+
+Tap **Open in Dreeve** on any activity to view its Dreeve page inside the app. The viewer supports website navigation, loading errors with retry, and **Done** to return to the activity. Website sign-in is separate from the API connection; WebKit retains website cookies and receives no API key. Links that would open a new window stay in the same viewer.
+
+The website route is `/activities/{activityId}` (including the `activity-` prefix), verified against Dreeve’s [activity page controller](https://github.com/dreeveapp/dreeve/blob/master/src/Controller/Page/Activity/ActivityRequestHandler.php). Configured server subpaths are preserved.
+
 ## Activity share cards
 
 Open an activity and tap **Share activity card**. Choose a transparent sticker, dark map poster, or photo background, then select Story (1080 × 1920) or Square (1080 × 1080). The live preview includes the route, activity date/title, distance, sport-appropriate pace or speed, duration and assigned gear with its cached thumbnail.
 
-**Copy sticker / Copy PNG** preserves the PNG image, including transparency for stickers. **Share image** opens the native share sheet with a PNG file. Photo backgrounds are chosen with the system photo picker; when a foreground subject can be detected, the route can be placed behind it. Subject detection happens on device. Photos and generated cards are not uploaded to Dreeve or stored in CloudKit. Temporary sharing files are removed when the share sheet closes.
+Sticker style offers **Copy sticker** only and preserves PNG transparency. Dark map and Photo styles offer **Copy sticker** and **Share image**. The native share sheet includes an explicit **Save to Photos** action that saves the finished PNG using add-only Photos permission; permission denial shows a clear explanation instead of reporting success. Saving does not request access to read the photo library.
+
+Photo style initially selects the activity’s first attached photo. Previous/next controls switch among its photos, and **Choose another photo** opens the system photo picker. If the activity has no photos, choose one before copy/share actions become available. Failed activity-photo loads offer Retry and the picker; downloads use the same bounded, credential-isolating photo client as activity details. Cancelled or superseded loads cannot replace a newer selection. When a foreground subject can be detected, the route can be placed behind it. Subject detection happens on device. Photos and generated cards are not uploaded to Dreeve or stored in CloudKit. Temporary sharing files are removed when the share sheet closes.
 
 Dark maps use Apple's native snapshot service and retain its attribution. If the map is unavailable, the card falls back to a route-only background. Indoor activities and missing or malformed routes still produce telemetry cards. The activity's local date is preserved without a timezone conversion.
 
 Implementation: `RouteGeometryProjector.swift`, `ShareCardRenderer.swift` and `ShareCardSheetView.swift`. The standalone `ShareCardContractTest.swift` suite covers polyline decoding, malformed input, date-line crossings, Mercator aspect ratio, degenerate routes, telemetry and export dimensions, and runs with `./run_tests.sh`.
 
-Validation: full standalone regression suite, simulator Debug build and unsigned iPhone Release build pass. Simulator checks verified Story/Square PNG dimensions, transparent sticker corners, native dark-map output with visible attribution, synthetic subject/route compositing and the customization screen. Real-photo subject detection and receiving apps’ copy/share behavior still need an iPhone check.
+Validation: full standalone regression suite, simulator Debug build and unsigned iPhone Release build pass. Simulator checks verified Story/Square PNG dimensions, transparent sticker corners, native dark-map output with visible attribution, synthetic subject/route compositing and the customization screen. Additional simulator checks exercised the first activity-photo default, switching to a second activity photo, saving the finished PNG with add-only Photos permission, and denied-permission feedback. Real-photo subject detection, the photo picker and receiving apps’ share-sheet presentation still need an iPhone check.
 
 ## Code map
 

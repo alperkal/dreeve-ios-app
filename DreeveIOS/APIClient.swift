@@ -21,6 +21,20 @@ struct DreeveAPIClient: Sendable {
         return url
     }
 
+    /// Website route, separate from /api/v1; never includes the API token.
+    func activityWebURL(_ id: String) throws -> URL {
+        let root = try Self.validatedURL(baseURL.absoluteString)
+        guard id.hasPrefix("activity-"), id.count > "activity-".count,
+              !id.contains("/"), !id.contains("\\"),
+              let segment = id.addingPercentEncoding(withAllowedCharacters:
+                CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))) else {
+            throw APIError.invalidURL
+        }
+        let address = root.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard let url = URL(string: address + "/activities/" + segment) else { throw APIError.invalidURL }
+        return url
+    }
+
     private func endpoint(_ path: String, query: [URLQueryItem] = []) throws -> URL {
         // Relative to the deployment root, preserves an optional subpath.
         let root = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

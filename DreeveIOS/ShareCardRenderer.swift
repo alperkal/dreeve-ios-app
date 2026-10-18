@@ -13,6 +13,11 @@ enum ShareCardFormat: String, CaseIterable, Identifiable, Sendable {
 enum ShareCardBackgroundStyle: String, CaseIterable, Identifiable, Sendable {
     case transparentSticker = "Sticker", darkMap = "Dark map", photoDepth = "Photo"
     var id: String { rawValue }
+    var supportsImageSharing: Bool { self != .transparentSticker }
+}
+
+enum ShareCardPhotoChoice: Equatable {
+    case none, activity(Int), library(UUID)
 }
 
 struct ShareCardTelemetry: Sendable, Equatable {

@@ -33,7 +33,22 @@ private final class PhotoProtocol: URLProtocol {
             let url = try client.activityPhotoURL(value)
             precondition(url.absoluteString == "https://example.test/dreeve/files/activities/a%20b.jpg")
         }
+        // Website links preserve the deployment path and prefixed activity ID.
+        let page = try client.activityWebURL("activity-9756441741")
+        precondition(page.absoluteString == "https://example.test/dreeve/activities/activity-9756441741")
+        precondition(page.query == nil && page.fragment == nil)
+        let encodedPage = try client.activityWebURL("activity-a b%?#")
+        precondition(encodedPage.absoluteString == "https://example.test/dreeve/activities/activity-a%20b%25%3F%23")
+        for id in ["", "9756441741", "activity-", "activity-../other", "activity-a\\b"] {
+            do { _ = try client.activityWebURL(id); preconditionFailure("Invalid activity ID accepted") }
+            catch APIError.invalidURL {}
+        }
+        let invalidWebsite = DreeveAPIClient(baseURL: URL(string: "http://example.test")!, token: "synthetic")
+        do { _ = try invalidWebsite.activityWebURL("activity-1"); preconditionFailure("HTTP website accepted") }
+        catch APIError.invalidURL {}
         let root = DreeveAPIClient(baseURL: URL(string: "https://example.test")!, token: "synthetic")
+        let rootPage = try root.activityWebURL("activity-1")
+        precondition(rootPage.absoluteString == "https://example.test/activities/activity-1")
         let rootURL = try root.activityPhotoURL("/files/activities/p.png")
         precondition(rootURL.absoluteString == "https://example.test/files/activities/p.png")
         let external = "https://cdn.example.test/photos/p.jpg?size=large"
@@ -65,6 +80,6 @@ private final class PhotoProtocol: URLProtocol {
         PhotoProtocol.failure = nil
         let retried = try await client.activityPhoto(external)
         precondition(retried == photo && PhotoProtocol.requests == 7)
-        print("Activity photo tests passed: configured HTTPS host/subpath, relative URLs, external images, token isolation, photo response, login, 404, timeout and retry.")
+        print("Activity photo and website URL tests passed: prefixed IDs, encoding, configured HTTPS host/subpath, relative URLs, external images, token isolation, photo response, login, 404, timeout and retry.")
     }
 }

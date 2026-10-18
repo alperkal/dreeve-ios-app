@@ -19,6 +19,7 @@ struct ActivityDetailView: View {
     @State private var gpxFile: URL?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var showingShareCardSheet = false
+    @State private var activityWebPage: ActivityWebPage?
 
     var body: some View {
         ScrollView {
@@ -113,6 +114,16 @@ struct ActivityDetailView: View {
                             }
                         }
                     }
+                    Button {
+                        do {
+                            let url = try session.configuredClient().activityWebURL(activity.id)
+                            activityWebPage = ActivityWebPage(url: url)
+                        } catch { errorMessage = error.localizedDescription }
+                    } label: {
+                        Label("Open in Dreeve", systemImage: "globe")
+                    }
+                    .buttonStyle(.bordered).tint(DreeveTheme.accent)
+
                     Button { showingShareCardSheet = true } label: {
                         Label("Share activity card", systemImage: "sparkles.rectangle.stack")
                     }
@@ -167,13 +178,17 @@ struct ActivityDetailView: View {
             }
         }
         .task { await load() }
+        .sheet(item: $activityWebPage) { page in
+            ActivityWebView(url: page.url)
+        }
         .sheet(isPresented: $showingShareCardSheet) {
             if let activity {
                 ShareCardSheetView(telemetry: ShareCardTelemetry(title: activity.name, sportType: activity.sportType,
                     dateText: String(activity.startDateLocal.prefix(10)), distanceMeters: activity.distanceInMeter ?? 0,
                     movingTimeSeconds: activity.movingTimeInSeconds ?? 0, elevationGainMeters: activity.elevationInMeter ?? 0,
                     gearName: gear.first { $0.id == activity.gearId }?.name, encodedPolyline: activity.encodedPolyline),
-                    gearThumbnail: shareGearThumbnail(for: activity))
+                    gearThumbnail: shareGearThumbnail(for: activity), activityImages: activity.images ?? [],
+                    activityPhotoClient: try? session.configuredClient())
             }
         }
         .sheet(isPresented: $isEditing) {

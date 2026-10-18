@@ -125,6 +125,9 @@ struct ShareCardContractTest {
         assertTrue(ShareCardFormat.story9x16.pixelSize == CGSize(width: 1080, height: 1920), "Story pixel size")
         assertTrue(ShareCardFormat.square1x1.pixelSize == CGSize(width: 1080, height: 1080), "Square pixel size")
 
+        assertTrue(!ShareCardBackgroundStyle.transparentSticker.supportsImageSharing, "Sticker has copy only")
+        assertTrue(ShareCardBackgroundStyle.darkMap.supportsImageSharing && ShareCardBackgroundStyle.photoDepth.supportsImageSharing, "Image styles allow share/save")
+
         print("PASS: ShareCardContractTest (decoding, malformed data, antimeridian, latitude/aspect, degenerate routes, telemetry and pixel formats)")
     }
 }

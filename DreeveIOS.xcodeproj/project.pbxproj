@@ -19,6 +19,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXBuildFile section */
+		6ADE15F811547922D0D980A4 /* ActivityWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBA7DB072F99638D143AA3; };
 		63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AB17A0059D9E34184D5C2B; };
 		53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7425E3C844D88C7D999C44; };
 		C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDBEE34FB3BE91EBADAB2D; };
@@ -60,6 +61,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityWebView.swift; sourceTree = "<group>"; };
 		A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
 		1B7425E3C844D88C7D999C44 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
 		67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachContextBuilder.swift; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 				67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */,
 				99609C103905761AB1D0C685 /* APIClient.swift */,
 				6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */,
+				CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */,
 				CDF1376147E58909AAA77389 /* ActivityDetailView.swift */,
 				643F122F9B9CBFD3982547E9 /* DashboardView.swift */,
 				3F34B394951617BB03A04DBF /* DreeveApp.swift */,
@@ -283,6 +286,7 @@
 				C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */,
 				B66496CAB75B3E11A7D6F9AC /* APIClient.swift in Sources */,
 				619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */,
+				6ADE15F811547922D0D980A4 /* ActivityWebView.swift in Sources */,
 				E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */,
 				978D55847D47778C1A2209DC /* DashboardView.swift in Sources */,
 				99E248A62A5410EC34904553 /* DreeveApp.swift in Sources */,
