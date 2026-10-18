@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import CoreData
+import WidgetKit
 
 @main
 struct DreeveApp: App {
@@ -14,13 +15,26 @@ struct DreeveApp: App {
                 if let container = goals.container {
                     RootView().background { GoalWidgetPublisher() }.modelContainer(container)
                 } else {
-                    RootView().task { try? GoalWidgetStorage().write(.empty) }
+                    // Preserve the saved widget if Goals storage is temporarily unavailable.
+                    RootView()
                 }
             }
                 .environmentObject(goals)
                 .environmentObject(session.goalProgress)
                 .environmentObject(session)
                 .environmentObject(healthSync)
+                .onChange(of: session.serverAddress) { old, new in
+                    // Only an explicit connection change/logout clears the old scope.
+                    // Initial unavailable storage or credentials must not clear it.
+                    guard old != new else { return }
+                    do {
+                        let storage = GoalWidgetStorage()
+                        if let url = try? DreeveAPIClient.validatedURL(new),
+                           storage.readResult().snapshot?.instanceID == GoalEngine.instanceID(url) { return }
+                        try storage.write(.empty)
+                        for kind in GoalWidgetStorage.kinds { WidgetCenter.shared.reloadTimelines(ofKind: kind) }
+                    } catch {}
+                }
                 .preferredColorScheme(.dark)
         }
     }

@@ -30,9 +30,15 @@ struct GoalWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: GoalWidgetSnapshot
     var selectedID: String? = nil
+    var storageUnavailable = false
 }
-private func goalTimeline(snapshot: GoalWidgetSnapshot, selectedID: String? = nil) -> Timeline<GoalWidgetEntry> {
+private func goalTimeline(result: GoalWidgetReadResult, selectedID: String? = nil) -> Timeline<GoalWidgetEntry> {
     let now = Date.now
+    guard let snapshot = result.snapshot else {
+        // First-unlock restrictions or I/O failure aren't an empty goal inventory.
+        return Timeline(entries: [GoalWidgetEntry(date: now, snapshot: .empty, selectedID: selectedID, storageUnavailable: true)],
+                        policy: .after(now.addingTimeInterval(60)))
+    }
     // A midnight entry invalidates completed progress at week/month rollover even
     // when the app is closed. Never display last period's check mark as current.
     let midnight = Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: now)!)
@@ -43,19 +49,22 @@ private func goalTimeline(snapshot: GoalWidgetSnapshot, selectedID: String? = ni
 struct CircleGoalProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> GoalWidgetEntry { GoalWidgetEntry(date: .now, snapshot: .example()) }
     func snapshot(for configuration: SelectWidgetGoal, in context: Context) async -> GoalWidgetEntry {
-        GoalWidgetEntry(date: .now, snapshot: context.isPreview ? .example() : GoalWidgetStorage().read(), selectedID: context.isPreview ? nil : configuration.goal?.id)
+        let result: GoalWidgetReadResult = context.isPreview ? .available(.example()) : GoalWidgetStorage().readResult()
+        return GoalWidgetEntry(date: .now, snapshot: result.snapshot ?? .empty, selectedID: context.isPreview ? nil : configuration.goal?.id,
+                               storageUnavailable: result.snapshot == nil)
     }
     func timeline(for configuration: SelectWidgetGoal, in context: Context) async -> Timeline<GoalWidgetEntry> {
-        goalTimeline(snapshot: GoalWidgetStorage().read(), selectedID: configuration.goal?.id)
+        goalTimeline(result: GoalWidgetStorage().readResult(), selectedID: configuration.goal?.id)
     }
 }
 struct OverviewGoalProvider: TimelineProvider {
     func placeholder(in context: Context) -> GoalWidgetEntry { GoalWidgetEntry(date: .now, snapshot: .example()) }
     func getSnapshot(in context: Context, completion: @escaping (GoalWidgetEntry) -> Void) {
-        completion(GoalWidgetEntry(date: .now, snapshot: context.isPreview ? .example() : GoalWidgetStorage().read()))
+        let result: GoalWidgetReadResult = context.isPreview ? .available(.example()) : GoalWidgetStorage().readResult()
+        completion(GoalWidgetEntry(date: .now, snapshot: result.snapshot ?? .empty, storageUnavailable: result.snapshot == nil))
     }
     func getTimeline(in context: Context, completion: @escaping (Timeline<GoalWidgetEntry>) -> Void) {
-        completion(goalTimeline(snapshot: GoalWidgetStorage().read()))
+        completion(goalTimeline(result: GoalWidgetStorage().readResult()))
     }
 }
 
@@ -73,11 +82,12 @@ struct GoalCompletionMark: View {
 }
 struct GoalWidgetEmpty: View {
     var unavailable = false
+    var storageUnavailable = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: "target").font(.title2).foregroundStyle(DreeveTheme.accent)
-            Text(unavailable ? "Goal unavailable" : "Your goals, at a glance").font(.headline).foregroundStyle(.white)
-            Text(unavailable ? "Open Dreeve or edit this widget to choose another goal." : "Open Dreeve to create goals and refresh progress.")
+            Text(storageUnavailable ? "Saved goals unavailable" : unavailable ? "Goal unavailable" : "Your goals, at a glance").font(.headline).foregroundStyle(.white)
+            Text(storageUnavailable ? "Unlock or open Dreeve to reload saved goals." : unavailable ? "Open Dreeve or edit this widget to choose another goal." : "Open Dreeve to create goals and refresh progress.")
                 .font(.caption).foregroundStyle(DreeveTheme.muted)
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
@@ -86,7 +96,8 @@ struct CircleGoalView: View {
     let entry: GoalWidgetEntry
     var body: some View {
         Group {
-            if let goal = entry.snapshot.selectedGoal(id: entry.selectedID) {
+            if entry.storageUnavailable { GoalWidgetEmpty(storageUnavailable: true) }
+            else if let goal = entry.snapshot.selectedGoal(id: entry.selectedID) {
                 VStack(spacing: 3) {
                     HStack {
                         Text("DREEVE").font(.system(size: 9, weight: .heavy, design: .rounded)).tracking(1)
@@ -124,7 +135,8 @@ struct OverviewGoalsView: View {
     var body: some View {
         let goals = entry.snapshot.orderedGoals(limit: family == .systemLarge ? 4 : 2)
         Group {
-            if goals.isEmpty { GoalWidgetEmpty() }
+            if entry.storageUnavailable { GoalWidgetEmpty(storageUnavailable: true) }
+            else if goals.isEmpty { GoalWidgetEmpty() }
             else {
                 VStack(alignment: .leading, spacing: family == .systemLarge ? 16 : 9) {
                     HStack {

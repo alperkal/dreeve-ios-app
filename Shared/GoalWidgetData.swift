@@ -52,6 +52,25 @@ struct GoalWidgetSnapshot: Codable, Equatable {
         guard let updatedAt else { return true }
         return refreshFailed || date.timeIntervalSince(updatedAt) > 900
     }
+    /// A temporarily unavailable progress snapshot must not replace known values
+    /// for the same instance, goal definition and calendar period.
+    func retainingKnownProgress(from saved: GoalWidgetSnapshot?) -> GoalWidgetSnapshot {
+        guard let saved, saved.instanceID == instanceID else { return self }
+        var retained = false
+        let merged = goals.map { goal -> WidgetGoal in
+            guard goal.current == nil, let old = saved.goals.first(where: { $0.id == goal.id }),
+                  old.sport == goal.sport, old.frequency == goal.frequency, old.isDistance == goal.isDistance,
+                  old.target == goal.target, old.periodStart == goal.periodStart, old.periodEnd == goal.periodEnd,
+                  let current = old.current, current.isFinite else { return goal }
+            retained = true
+            return WidgetGoal(id: goal.id, title: goal.title, sport: goal.sport, frequency: goal.frequency,
+                isDistance: goal.isDistance, target: goal.target, current: current,
+                periodStart: goal.periodStart, periodEnd: goal.periodEnd)
+        }
+        return GoalWidgetSnapshot(instanceID: instanceID, updatedAt: retained ? saved.updatedAt : updatedAt,
+            refreshFailed: refreshFailed || retained, favorites: favorites, goals: merged)
+    }
+
     static func example(now: Date = .now, complete: Bool = false) -> GoalWidgetSnapshot {
         let start = Calendar.current.startOfDay(for: now)
         let format = DateFormatter(); format.calendar = Calendar(identifier: .gregorian)
@@ -62,6 +81,15 @@ struct GoalWidgetSnapshot: Codable, Equatable {
             WidgetGoal(id: "run", title: "Monthly running", sport: "Run", frequency: "Monthly", isDistance: true, target: 100, current: complete ? 112 : 64.2,
                        periodStart: format.string(from: start), periodEnd: format.string(from: Calendar.current.date(byAdding: .month, value: 1, to: start)!))
         ])
+    }
+}
+
+enum GoalWidgetReadResult: Equatable {
+    case available(GoalWidgetSnapshot)
+    case unavailable
+    var snapshot: GoalWidgetSnapshot? {
+        if case .available(let value) = self { return value }
+        return nil
     }
 }
 
@@ -78,16 +106,40 @@ struct GoalWidgetStorage {
         #endif
     }
     private var url: URL? { directory?.appendingPathComponent("goals-widget.json") }
-    func read() -> GoalWidgetSnapshot {
-        guard let url, let data = try? Data(contentsOf: url), data.count <= 4_000_000,
-              let snapshot = try? JSONDecoder().decode(GoalWidgetSnapshot.self, from: data) else { return .empty }
-        return snapshot
+    /// Missing, locked or damaged storage is different from a successfully saved
+    /// empty goal list (including explicit logout/deletion).
+    func readResult() -> GoalWidgetReadResult {
+        guard let url else { return .unavailable }
+        // Upgrade existing installs even when the snapshot hasn't changed and the
+        // publisher would otherwise skip writing it. A locked legacy file can be
+        // migrated on the next unlocked app/widget read.
+        try? prepareForWidgetAccess()
+        guard let data = try? Data(contentsOf: url), data.count <= 4_000_000,
+              let snapshot = try? JSONDecoder().decode(GoalWidgetSnapshot.self, from: data) else { return .unavailable }
+        return .available(snapshot)
+    }
+    func read() -> GoalWidgetSnapshot { readResult().snapshot ?? .empty }
+
+    func prepareForWidgetAccess() throws {
+        #if os(iOS)
+        guard let url, FileManager.default.fileExists(atPath: url.path) else { return }
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        if attributes[.protectionKey] as? FileProtectionType != .completeUntilFirstUserAuthentication {
+            try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: url.path)
+        }
+        #endif
     }
     func write(_ snapshot: GoalWidgetSnapshot) throws {
         guard let url else { throw CocoaError(.fileNoSuchFile) }
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(snapshot)
-        try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        #if os(iOS)
+        // Encrypted at rest; readable after the first unlock following a restart,
+        // including later locks when WidgetKit starts a new extension process.
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
         var file = url; var values = URLResourceValues(); values.isExcludedFromBackup = true
         try file.setResourceValues(values)
     }
