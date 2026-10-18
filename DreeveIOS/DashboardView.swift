@@ -102,16 +102,26 @@ struct DashboardView: View {
                                     .foregroundStyle(DreeveTheme.muted)
                             }
                             ForEach(insights.sports) { item in
-                                HStack(spacing: 12) {
-                                    Image(systemName: activitySymbol(item.id))
-                                        .foregroundStyle(DreeveTheme.accent)
-                                        .frame(width: 24)
-                                    Text(item.id)
-                                    Spacer()
-                                    Text("\(item.count)")
-                                        .foregroundStyle(DreeveTheme.muted)
-                                        .monospacedDigit()
+                                NavigationLink {
+                                    ActivitiesView(embedded: true, sportFilter: ActivitySportFilter(sport: item.id))
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: activitySymbol(item.id))
+                                            .foregroundStyle(DreeveTheme.accent)
+                                            .frame(width: 24)
+                                        Text(item.id)
+                                        Spacer()
+                                        Text("\(item.count)")
+                                            .foregroundStyle(DreeveTheme.muted)
+                                            .monospacedDigit()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(DreeveTheme.muted)
+                                    }
+                                    .contentShape(Rectangle())
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(item.id), \(item.count) activities in the last 30 days")
                             }
                         }
                     }

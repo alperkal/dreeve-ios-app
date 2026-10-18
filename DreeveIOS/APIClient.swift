@@ -82,6 +82,35 @@ struct DreeveAPIClient: Sendable {
         return try await perform(path: "activities", query: query)
     }
 
+    /// Fetch the complete filtered period without changing the main Activities tab.
+    func activities(matching filter: ActivitySportFilter) async throws -> [DreeveActivity] {
+        var next = 1
+        var expectedPages: Int?
+        var seen = Set<String>()
+        var results: [DreeveActivity] = []
+        while true {
+            try Task.checkCancellation()
+            let response = try await activities(page: next, size: 100, from: filter.from, to: filter.to,
+                                                sport: filter.sportTypes.joined(separator: ","))
+            guard response.pagination.page == next, response.pagination.totalPages >= 0,
+                  response.pagination.totalPages > 0 || response.activities.isEmpty,
+                  response.pagination.totalPages == (expectedPages ?? response.pagination.totalPages),
+                  !response.activities.isEmpty || (next == 1 && response.pagination.totalPages <= 1) else {
+                throw APIError.decoding("Activity results changed during loading. Please refresh again.")
+            }
+            expectedPages = response.pagination.totalPages
+            for activity in response.activities where seen.insert(activity.id).inserted {
+                if filter.matches(activity) { results.append(activity) }
+            }
+            if next >= response.pagination.totalPages { break }
+            next += 1
+        }
+        try Task.checkCancellation()
+        return results.sorted {
+            $0.startDateLocal == $1.startDateLocal ? $0.id < $1.id : $0.startDateLocal > $1.startDateLocal
+        }
+    }
+
     /// Public v1 has no gear filter. Read every page and match complete gear IDs locally.
     func activitiesForGear(_ gearID: String) async throws -> [DreeveActivity] {
         var matches: [DreeveActivity] = []

@@ -10,8 +10,15 @@ struct ActivitiesView: View {
     @State private var gearChoices: [DreeveGear]
     @State private var gearError: String?
     private let embedded: Bool
+    private let sportFilter: ActivitySportFilter?
+    @State private var sportActivities: [DreeveActivity] = []
+    @State private var sportCacheKey = ""
+    @State private var sportError: String?
+    @State private var loadingSport = false
+    @State private var sportRequestID = UUID()
 
-    init(gear: DreeveGear? = nil, embedded: Bool = false) {
+    init(gear: DreeveGear? = nil, embedded: Bool = false, sportFilter: ActivitySportFilter? = nil) {
+        self.sportFilter = sportFilter
         self.embedded = embedded
         _selectedGearID = State(initialValue: gear?.id)
         _gearChoices = State(initialValue: gear.map { [$0] } ?? [])
@@ -21,10 +28,17 @@ struct ActivitiesView: View {
         return gearChoices.first { $0.id == selectedGearID }?.name ?? selectedGearID
     }
     private var source: [DreeveActivity] {
-        selectedGearID == nil ? session.activities :
+        if let sportFilter {
+            let values = sportCacheKey == session.serverAddress + "|" + sportFilter.key ? sportActivities :
+                session.insightsActivities.filter { sportFilter.matches($0) }
+            return values.filter { selectedGearID == nil || $0.gearId == selectedGearID }
+        }
+        return selectedGearID == nil ? session.activities :
             (cachedGearKey == session.serverAddress + "|" + (selectedGearID ?? "") ? gearActivities : [])
     }
-    private var isLoading: Bool { selectedGearID == nil ? session.isLoadingActivities : session.isSyncingActivityIndex }
+    private var isLoading: Bool {
+        sportFilter != nil ? loadingSport : (selectedGearID == nil ? session.isLoadingActivities : session.isSyncingActivityIndex)
+    }
     private var visibleActivities: [DreeveActivity] {
         guard !search.isEmpty else { return source }
         return source.filter { activity in
@@ -40,6 +54,20 @@ struct ActivitiesView: View {
     }
     private var content: some View {
         List {
+            if let sportFilter {
+                Section {
+                    Label("\(sportFilter.sport) · Last 30 days", systemImage: activitySymbol(sportFilter.sport))
+                    Text("\(sportFilter.from) – \(sportFilter.to)")
+                        .font(.caption).foregroundStyle(DreeveTheme.muted)
+                    if loadingSport { ProgressView("Updating activities…") }
+                    if let sportError {
+                        Text("Could not refresh activities. \(sportError)")
+                            .font(.caption).foregroundStyle(.orange)
+                        if !source.isEmpty { Text("Showing saved activities.").font(.caption).foregroundStyle(DreeveTheme.muted) }
+                        Button("Retry") { Task { await reload() } }.disabled(loadingSport)
+                    }
+                }
+            }
             if let selectedName {
                 Section {
                     HStack {
@@ -54,16 +82,16 @@ struct ActivitiesView: View {
                 Section { Text(error).font(.caption).foregroundStyle(.orange) }
             }
             Section {
-                if selectedGearID != nil && session.showsActivityIndexStatus { ActivityIndexStatusView() }
+                if sportFilter == nil && selectedGearID != nil && session.showsActivityIndexStatus { ActivityIndexStatusView() }
                 if source.isEmpty && !isLoading {
-                    EmptyMessage(title: "No activities", message: selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear.", symbol: "figure.run")
+                    EmptyMessage(title: "No activities", message: sportFilter != nil ? "No matching activities in this period." : (selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear."), symbol: "figure.run")
                         .listRowBackground(Color.clear)
                 }
                 ForEach(visibleActivities) { activity in
                     NavigationLink { ActivityDetailView(activityID: activity.id) } label: { ActivityRow(activity: activity) }
                         .listRowBackground(DreeveTheme.surface)
                 }
-                if selectedGearID == nil && session.hasMore {
+                if sportFilter == nil && selectedGearID == nil && session.hasMore {
                     Button { Task { await session.loadMoreActivities() } } label: {
                         HStack {
                             Spacer()
@@ -74,9 +102,13 @@ struct ActivitiesView: View {
                     }
                     .listRowBackground(DreeveTheme.surface).disabled(session.isLoadingActivities)
                 }
-            } header: { Text(selectedGearID == nil ? "Recent activities" : "Gear activities") }
+            } header: { Text(sportFilter != nil ? "Matching activities" : (selectedGearID == nil ? "Recent activities" : "Gear activities")) }
             footer: {
-                Text(selectedGearID == nil ? "Search applies to loaded activities. Load more to see older workouts." : "\(source.count) activities assigned to this gear. Search by name, sport, location or gear.")
+                if sportFilter != nil {
+                    Text("\(source.count) matching activities. Search and gear filters apply within this period. Pull to refresh.")
+                } else {
+                    Text(selectedGearID == nil ? "Search applies to loaded activities. Load more to see older workouts." : "\(source.count) activities assigned to this gear. Search by name, sport, location or gear.")
+                }
             }
         }
         .scrollContentBackground(.hidden)
@@ -105,12 +137,13 @@ struct ActivitiesView: View {
             }
         }
         .task(id: session.serverAddress) { await loadGearChoices() }
-        .task(id: session.serverAddress + "|" + (selectedGearID ?? "all")) {
-            if selectedGearID != nil { await reload(forceFullReconcile: false) }
+        .task(id: session.serverAddress + "|" + (sportFilter?.key ?? selectedGearID ?? "all") + "|" + (sportFilter != nil ? String(session.activityIndexRevision) : "")) {
+            if sportFilter != nil { await reload() }
+            else if selectedGearID != nil { await reload(forceFullReconcile: false) }
             else { gearActivities = []; gearActivityError = nil; if session.activities.isEmpty { await session.reloadActivities() } }
         }
         .task(id: "\(session.serverAddress)|\(selectedGearID ?? "all")|\(session.activityIndexRevision)") {
-            await loadCachedGear()
+            if sportFilter == nil { await loadCachedGear() }
         }
         .refreshable { await reload() }
         .alert("Request failed", isPresented: Binding(get: { session.errorMessage != nil }, set: { if !$0 { session.errorMessage = nil } })) {
@@ -131,7 +164,24 @@ struct ActivitiesView: View {
         }
     }
     private func reload(forceFullReconcile: Bool = true) async {
-        if selectedGearID != nil {
+        if let sportFilter {
+            let server = session.serverAddress
+            let requestID = UUID()
+            sportRequestID = requestID
+            loadingSport = true
+            defer { if sportRequestID == requestID { loadingSport = false } }
+            do {
+                let values = try await session.configuredClient().activities(matching: sportFilter)
+                guard server == session.serverAddress, sportRequestID == requestID, !Task.isCancelled else { return }
+                sportActivities = values
+                sportCacheKey = server + "|" + sportFilter.key
+                sportError = nil
+            } catch {
+                guard server == session.serverAddress, sportRequestID == requestID,
+                      !Task.isCancelled, !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+                sportError = error.localizedDescription
+            }
+        } else if selectedGearID != nil {
             await loadCachedGear()
             await session.syncActivityIndex(forceFullReconcile: forceFullReconcile)
             await loadCachedGear()

@@ -112,12 +112,7 @@ enum GoalEngine {
     /// Dreeve's virtual sports share goal progress with their real-world equivalents.
     /// Keep stored activity types intact so edits, cached records and API data retain fidelity.
     static func goalSport(_ sport: String) -> String {
-        switch sport {
-        case "VirtualRun": return "Run"
-        case "VirtualRide": return "Ride"
-        case "VirtualRow": return "Rowing"
-        default: return sport
-        }
+        SportFamily.canonical(sport)
     }
 
     static func value(sport: String, metric: GoalMetric, period: GoalPeriod,
@@ -198,5 +193,25 @@ enum GoalStreakEngine {
             start = previous
         }
         return GoalStreak(completedPeriods: length, currentPeriodCompleted: complete)
+    }
+}
+
+/// Frozen calendar range for an Overview drill-down, including both boundary days.
+struct ActivitySportFilter: Equatable, Sendable {
+    let sport: String
+    let from: String
+    let to: String
+    var sportTypes: [String] { SportFamily.types(for: sport) }
+    var key: String { "\(sport)|\(from)|\(to)" }
+
+    init(sport: String, now: Date = .now, timeZone: TimeZone = .current) {
+        self.sport = SportFamily.canonical(sport)
+        to = GoalCalendar.today(now: now, timeZone: timeZone)
+        from = GoalCalendar.addingDays(-29, to: to)
+    }
+
+    func matches(_ activity: DreeveActivity) -> Bool {
+        guard let day = GoalCalendar.localDay(activity.startDateLocal) else { return false }
+        return day >= from && day <= to && SportFamily.canonical(activity.sportType) == sport
     }
 }

@@ -151,6 +151,27 @@ struct DreeveWeight: Decodable, Identifiable {
     var id: String { on }
 }
 
+/// Shared grouping for goals and Overview; preserve original API types on activities.
+enum SportFamily {
+    static func canonical(_ sport: String) -> String {
+        switch sport {
+        case "VirtualRun": return "Run"
+        case "VirtualRide": return "Ride"
+        case "VirtualRow": return "Rowing"
+        default: return sport
+        }
+    }
+
+    static func types(for sport: String) -> [String] {
+        switch canonical(sport) {
+        case "Run": return ["Run", "VirtualRun"]
+        case "Ride": return ["Ride", "VirtualRide"]
+        case "Rowing": return ["Rowing", "VirtualRow"]
+        default: return [sport]
+        }
+    }
+}
+
 struct SportCount: Identifiable {
     let id: String
     let count: Int
@@ -177,9 +198,9 @@ struct ActivityInsights {
     var monthKm: Double { activities.reduce(0) { $0 + $1.distanceKilometers } }
     var monthElevation: Double { activities.reduce(0) { $0 + ($1.elevationInMeter ?? 0) } }
     var sports: [SportCount] {
-        Dictionary(grouping: activities, by: \.sportType)
+        Dictionary(grouping: activities, by: { SportFamily.canonical($0.sportType) })
             .map { SportCount(id: $0.key, count: $0.value.count) }
-            .sorted { $0.count > $1.count }
+            .sorted { $0.count == $1.count ? $0.id < $1.id : $0.count > $1.count }
     }
     var dailyDistances: [DailyDistance] {
         let calendar = Calendar.current
