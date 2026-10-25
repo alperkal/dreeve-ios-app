@@ -6,7 +6,7 @@ Reviewed 2026-10-25. Baseline release: `v0.6.0` (`e0c23b2`); the Watch companion
 
 ## Purpose and product boundaries
 
-A native, personal iPhone companion for a self-hosted Dreeve activity server: browse activities, view routes/photos, manage gear, import workouts from Apple Health or Files, track recurring goals, see widgets and a local training brief, and create shareable activity cards.
+A native, personal iPhone companion for a self-hosted Dreeve activity server: browse activities, view routes/photos, manage gear, import workouts from Apple Health, track recurring goals, see widgets and a local training brief, and create shareable activity cards.
 
 - SwiftUI, iOS 17 minimum, Swift 5 language mode; an Xcode project with an embedded iPhone WidgetKit extension plus a watchOS 10+ companion and complication extension. No third-party runtime dependency is currently required. FoundationModels is optional behind availability checks.
 - Dreeve owns activities and gear. The app adds goal definitions and local derived features; it does not add a backend service or replace Dreeve’s import processor.
@@ -33,7 +33,7 @@ A native, personal iPhone companion for a self-hosted Dreeve activity server: br
 | `DreeveIOS/HealthSyncCore.swift` | Workout DTOs, metric resampling, import journal/recovery/matching; discovery policy, decisions journal and server verifier. |
 | `DreeveIOS/HealthSyncStore.swift` | Manual and approved FIT upload orchestration, duplicate preflight, durable upload intent and server reconciliation. |
 | `DreeveIOS/HealthImportDiscovery.swift` | Automatic foreground discovery, saved approvals/snoozes/dismissals, custom `HealthImportPrompt`. |
-| `DreeveIOS/HealthFITExporter.swift`, `HealthSyncView.swift`, `UploadView.swift` | Native FIT writer, manual Health selection/recovery, Files import and job history. |
+| `DreeveIOS/HealthFITExporter.swift`, `HealthSyncView.swift` | Native FIT writer, manual Health selection/recovery and import-status tracking. The standalone Upload/Files screen was removed; do not recreate it as a tab. |
 | `DreeveIOS/GearView.swift`, `GearImageCore.swift`, `GearImageStore.swift` | Gear list and thumbnail view; two-tap/timeout state machine, image-search client, disk cache and image processing. |
 | `DreeveIOS/CoachContextBuilder.swift`, `CoachEngine.swift`, `CoachCardView.swift` | Verified local context, deterministic brief/optional model curation/cache and UI. |
 | `DreeveIOS/RouteGeometryProjector.swift`, `ShareCardRenderer.swift`, `ShareCardSheetView.swift` | Route projection, native compositing/export, photo/background selection and share/save actions. |
@@ -80,7 +80,7 @@ Dreeve API -> ActivitySyncEngine -> local ActivityIndexStore
 Main Activities tab -> paginated API list (separate from the index)
 Overview sport row -> fully paginated date + sport-family API query
 PATCH / DELETE -> server -> write-through index + visible state -> derived refresh
-Health / Files upload -> server queue -> poll final import result -> index reconciliation
+Approved Health upload -> server queue -> poll final import result -> index reconciliation
 ```
 
 - First activity sync exhausts all history before publishing a complete Overview/Goal snapshot. Partial cold history may be visible to Gear with an incomplete-history indicator.

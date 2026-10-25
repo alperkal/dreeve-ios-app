@@ -78,12 +78,9 @@ struct RootView: View {
                         .tabItem { Label("Health sync", systemImage: "heart") }
                         .tag(4)
                         .badge(healthDiscovery.visibleEntries.count)
-                    UploadView()
-                        .tabItem { Label("Upload", systemImage: "square.and.arrow.up") }
-                        .tag(5)
                     NavigationStack { SettingsView() }
                         .tabItem { Label("Settings", systemImage: "gearshape") }
-                        .tag(6)
+                        .tag(5)
                 }
                 .tint(DreeveTheme.accent)
             } else {

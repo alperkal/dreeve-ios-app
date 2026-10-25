@@ -40,7 +40,6 @@
 		3894EC9353AF6267D9A04E96 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D07B68E143C56935BEFD76F9 /* Assets.xcassets */; };
 		619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */; };
 		741685AD161B6210DD50A91F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42B5018550BC5DD2F6F2D770 /* Models.swift */; };
-		763B4753E5969A2669455022 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6352C7CDC1D20A9513537779 /* UploadView.swift */; };
 		9728FCF5BFD75018EDD71EE1 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8399F61B31F2F97A3A53B3 /* Theme.swift */; };
 		978D55847D47778C1A2209DC /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643F122F9B9CBFD3982547E9 /* DashboardView.swift */; };
 		99E248A62A5410EC34904553 /* DreeveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F34B394951617BB03A04DBF /* DreeveApp.swift */; };
@@ -95,7 +94,6 @@
 		3F34B394951617BB03A04DBF /* DreeveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveApp.swift; sourceTree = "<group>"; };
 		42B5018550BC5DD2F6F2D770 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		595A787F0534A2FB5A149FEF /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
-		6352C7CDC1D20A9513537779 /* UploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
 		643F122F9B9CBFD3982547E9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
 		99609C103905761AB1D0C685 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
@@ -216,7 +214,6 @@
 				10D630ADBBEA7FFCED795502 /* Session.swift */,
 				C138BEAD3976A020207BBB96 /* SettingsView.swift */,
 				2B8399F61B31F2F97A3A53B3 /* Theme.swift */,
-				6352C7CDC1D20A9513537779 /* UploadView.swift */,
 				D07B68E143C56935BEFD76F9 /* Assets.xcassets */,
 			);
 			path = DreeveIOS;
@@ -349,7 +346,6 @@
 				2E152BEAB5982F1ED19FC60D /* HealthImportDiscovery.swift in Sources */,
 				3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */,
 				ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */,
-				763B4753E5969A2669455022 /* UploadView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

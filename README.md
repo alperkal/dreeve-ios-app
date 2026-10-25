@@ -30,14 +30,14 @@ App screens are captured from the iPhone 17 simulator using demo activities and 
 
 ## Features included
 
-- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Gear, Health sync, Upload, Settings.
+- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Gear, Health sync, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
 - Browse active and retired gear with cached pictures and open each gear's activity list. Display the assigned gear thumbnail, name, imported/custom type, retirement status, lifetime distance, and activity count. Choose existing gear (including retired items) or remove the assignment. Loading errors offer a retry, and missing inventory entries preserve the current assignment.
 - Add an image from the Photos library (when upload mode is supported).
 - Download an existing GPX and share it from the device.
-- Import `.fit`, `.tcx` and `.gpx` from Files using multipart upload, and view import job states. Import is asynchronous.
+- Import Apple Health workouts as FIT after approval, with duplicate checks and asynchronous import-status tracking.
 - Last-30-day dashboard and current-period goals derived from a shared local activity index, with last-7-day chart and sport breakdown. Gear filtering works from saved history, including offline.
 
 ## Open in Xcode
@@ -63,7 +63,7 @@ App screens are captured from the iPhone 17 simulator using demo activities and 
 | Delete activity | `DELETE /api/v1/activities/{activityId}` |
 | GPX export | `GET /api/v1/activities/{activityId}/gpx` |
 | Add photo | `POST /api/v1/activities/{activityId}/images` |
-| Upload FIT/TCX/GPX | `POST /api/v1/activity/upload` |
+| Upload Health FIT workouts | `POST /api/v1/activity/upload` |
 | Import history | `GET /api/v1/file-imports` |
 
 ### Important API boundaries
@@ -122,7 +122,6 @@ Validation: full standalone regression suite, simulator Debug build and unsigned
 - `ActivitiesView.swift`: paginated list
 - `ActivityDetailView.swift`: detail, edit, photos, GPX, delete
 - `RouteMapView.swift`: encoded polyline map
-- `UploadView.swift`: file picker, upload queue/history
 - `SettingsView.swift`: server URL, API key, server capabilities
 
 Reference OpenAPI: https://docs.dreeve.app/api/openapi.yaml
@@ -185,7 +184,7 @@ Recording source names are preserved as device names. FIT sport/sub-sport and pr
 
 The journal contains HealthKit IDs, workout summaries, destination URLs, and activity links, never API tokens or raw GPS/heart-rate samples. It is stored in Application Support, excluded from backups, and protected with complete file protection on iOS. If the journal cannot be read or saved, uploads stop rather than lose duplicate tracking. Links are local to this installation; Dreeve has no HealthKit-ID field in its current public API. Deleting an activity in Dreeve does not delete it from Health or automatically upload it again. When Health workouts are loaded or status is refreshed, linked imported activities are checked directly. A confirmed HTTP 404 changes the local status to **Deleted from Dreeve — select to re-import**, clears the obsolete activity link, and allows an explicit FIT upload. Opening Health sync with previously loaded workouts also refreshes status. Retained successful import-history rows are ignored only when their linked activity returns 404; queued/unconfirmed imports, missing activity IDs, authorization errors and network failures are not treated as deletion. Refresh also updates nearby-workout candidates so a deleted activity does not remain a stale duplicate suggestion.
 
-**Current limits:** Synchronization is one way (Health → Dreeve), requires explicit approval, and runs while the app is open. Workouts can be selected manually or discovered through the automatic last-month review. A 202 response means queued, not imported. The server needs `IMPORT_MODE=files` and its normal file-processing job. Refresh status after that job runs. No automatic background delivery, propagation of later workout edits/deletions, or lap splits are implemented. FIT preserves active versus elapsed duration, but speed/elevation metrics may still differ from Apple's algorithms. FIT cannot repair inaccurate GPS measurements or recover missing information from an existing GPX file. Apple's HealthKit read privacy means an empty result can mean no workouts, limited history, or denied permission. Existing FIT/TCX/GPX Files uploads and the server's GPX download endpoint remain available.
+**Current limits:** Synchronization is one way (Health → Dreeve), requires explicit approval, and runs while the app is open. Workouts can be selected manually or discovered through the automatic last-month review. A 202 response means queued, not imported. The server needs `IMPORT_MODE=files` and its normal file-processing job. Refresh status after that job runs. No automatic background delivery, propagation of later workout edits/deletions, or lap splits are implemented. FIT preserves active versus elapsed duration, but speed/elevation metrics may still differ from Apple's algorithms. FIT cannot repair inaccurate GPS measurements or recover missing information from an existing GPX file. Apple's HealthKit read privacy means an empty result can mean no workouts, limited history, or denied permission. The standalone Files Upload screen has been removed. Apple Health FIT imports and the server's GPX download endpoint remain available.
 
 **Verification for this update:** Simulator and unsigned iPhone builds passed. Portable contract tests cover cadence/power record and summary fields, fractional cadence, step-rate conversion, interval weighting, duplicate/gap/zero/pause handling, FIT header/file CRCs, required activity/lap/session messages, indoor output, GPS precision and antimeridian bounds, altitude/speed/heart-rate values, pause events, separate elapsed/active totals, sport mappings, timezone-aware local timestamps, legacy TCX journal decoding/reconciliation, multi-page exact-filename checks, durable history, confirmed deletion recovery, retained import history, pending/offline protection, duplicate candidates and authenticated binary multipart uploads returning 202. Synthetic indoor/outdoor and cadence/power files were independently decoded and checked with Garmin's official Swift SDK. No SDK/runtime dependency is added to the app; the writer implements the public FIT protocol directly. These are synthetic/mock checks; no real Health data was read and no live Dreeve records were modified.
 
