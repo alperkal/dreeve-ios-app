@@ -60,6 +60,7 @@ final class HealthSyncStore: ObservableObject {
     func load(session: DreeveSession, from: Date, routes: Bool, heartRate: Bool) async {
         guard !isBusy else { return }
         isBusy = true
+        errorMessage = nil
         isReady = false
         workouts = []
         candidates = [:]
@@ -85,7 +86,7 @@ final class HealthSyncStore: ObservableObject {
             try await reconcile(client: client, server: server)
             try ensureServer(session, server: server)
             isReady = true
-        } catch { errorMessage = error.localizedDescription }
+        } catch { if !(error is CancellationError), !Task.isCancelled { errorMessage = error.localizedDescription } }
     }
 
     func refresh(session: DreeveSession) async {
@@ -107,10 +108,10 @@ final class HealthSyncStore: ObservableObject {
             }
             await session.reloadActivities()
             await session.refreshGoals(forceFullReconcile: true)
-        } catch { errorMessage = error.localizedDescription }
+        } catch { if !(error is CancellationError), !Task.isCancelled { errorMessage = error.localizedDescription } }
     }
 
-    func sync(ids: Set<UUID>, session: DreeveSession, routes: Bool, heartRate: Bool) async {
+    func sync(ids: Set<UUID>, session: DreeveSession, routes: Bool, heartRate: Bool, continueWhile: () -> Bool = { true }) async {
         guard !isBusy, isReady, loadedServer == session.serverAddress else { return }
         let selected = workouts.filter { ids.contains($0.id) && canSelect($0, server: session.serverAddress) }
         isBusy = true
@@ -125,6 +126,7 @@ final class HealthSyncStore: ObservableObject {
             let existing = try await existingActivities(client: client, from: from.addingTimeInterval(-86400))
             for (index, workout) in selected.enumerated() {
                 try Task.checkCancellation()
+                guard continueWhile() else { throw CancellationError() }
                 try ensureServer(session, server: server)
                 progress = "Syncing \(index + 1) of \(selected.count)…"
                 if let remote = try await remoteImport(client: client, workout: workout) {
@@ -142,6 +144,7 @@ final class HealthSyncStore: ObservableObject {
                 let data = try await reader.export(workout, routes: routes, heartRate: heartRate)
                 try ensureServer(session, server: server)
                 try Task.checkCancellation()
+                guard continueWhile() else { throw CancellationError() }
                 var pending = HealthSyncRecord(server: server, workout: workout, state: .uncertain,
                     message: "Refresh status to confirm whether Dreeve accepted the file. No automatic retry will be made.", uploadFilename: workout.filename)
                 // Persist intent BEFORE the request. A crash or timeout must not cause a blind reupload.
@@ -167,7 +170,7 @@ final class HealthSyncStore: ObservableObject {
             try ensureServer(session, server: server)
             await session.reloadActivities()
             await session.refreshGoals(forceFullReconcile: true)
-        } catch { errorMessage = error.localizedDescription }
+        } catch { if !(error is CancellationError), !Task.isCancelled { errorMessage = error.localizedDescription } }
     }
 
     // Called only after the person explicitly confirms an existing activity match.

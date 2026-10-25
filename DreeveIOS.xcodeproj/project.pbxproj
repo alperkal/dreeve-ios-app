@@ -19,6 +19,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXBuildFile section */
+		2E152BEAB5982F1ED19FC60D /* HealthImportDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AB8FF0A1396B39EFB0C5CE; };
 		6ADE15F811547922D0D980A4 /* ActivityWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBA7DB072F99638D143AA3; };
 		63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AB17A0059D9E34184D5C2B; };
 		53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7425E3C844D88C7D999C44; };
@@ -61,6 +62,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		F7AB8FF0A1396B39EFB0C5CE /* HealthImportDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImportDiscovery.swift; sourceTree = "<group>"; };
 		CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityWebView.swift; sourceTree = "<group>"; };
 		A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
 		1B7425E3C844D88C7D999C44 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 				53D7410056910A0F736E4321 /* DreeveIOS.entitlements */,
 				10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */,
 				8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */,
+				F7AB8FF0A1396B39EFB0C5CE /* HealthImportDiscovery.swift */,
 				831CCA044730B4857B49325A /* HealthSyncStore.swift */,
 				224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */,
 				C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */,
@@ -298,6 +301,7 @@
 				9728FCF5BFD75018EDD71EE1 /* Theme.swift in Sources */,
 				E945A32AE48C32F262F4329D /* HealthSyncCore.swift in Sources */,
 				4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */,
+				2E152BEAB5982F1ED19FC60D /* HealthImportDiscovery.swift in Sources */,
 				3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */,
 				ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */,
 				763B4753E5969A2669455022 /* UploadView.swift in Sources */,

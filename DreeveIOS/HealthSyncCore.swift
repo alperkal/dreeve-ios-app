@@ -219,3 +219,113 @@ enum HealthSyncError: LocalizedError {
         }
     }
 }
+
+// Decisions are independent of import results: approval is durable, not proof of upload.
+enum HealthDiscoveryAction: String, Codable { case approved, dismissed, later }
+struct HealthDiscoveryDecision: Codable {
+    let scope: String
+    let workoutID: UUID
+    let action: HealthDiscoveryAction
+    let date: Date
+    let routes: Bool
+    let heartRate: Bool
+}
+
+final class HealthDiscoveryJournal {
+    private let url: URL
+    private(set) var decisions: [HealthDiscoveryDecision]
+    init(url: URL) throws {
+        self.url = url
+        decisions = FileManager.default.fileExists(atPath: url.path) ?
+            try JSONDecoder().decode([HealthDiscoveryDecision].self, from: Data(contentsOf: url)) : []
+    }
+    func decision(scope: String, id: UUID) -> HealthDiscoveryDecision? {
+        decisions.first { $0.scope == scope && $0.workoutID == id }
+    }
+    func set(_ values: [HealthDiscoveryDecision]) throws {
+        let keys = Set(values.map { $0.scope + "|" + $0.workoutID.uuidString })
+        let next = decisions.filter { !keys.contains($0.scope + "|" + $0.workoutID.uuidString) } + values
+        try persist(next)
+    }
+    func remove(scope: String, id: UUID) throws {
+        try persist(decisions.filter { !($0.scope == scope && $0.workoutID == id) })
+    }
+    private func persist(_ next: [HealthDiscoveryDecision]) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(next)
+        #if os(iOS)
+        try data.write(to: url, options: [.atomic, .completeFileProtection])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
+        var path = url
+        var flags = URLResourceValues()
+        flags.isExcludedFromBackup = true
+        try path.setResourceValues(flags)
+        decisions = next
+    }
+}
+
+enum HealthDiscoveryStatus: Equatable { case ready, unverified, review }
+struct HealthDiscoveryEntry: Identifiable {
+    let workout: HealthWorkoutSummary
+    let status: HealthDiscoveryStatus
+    var id: UUID { workout.id }
+}
+
+enum HealthDiscoveryPolicy {
+    /// A rolling calendar month, not 30 * 24 hours (month lengths and DST vary).
+    static func start(now: Date = .now, calendar: Calendar = .current) -> Date {
+        calendar.date(byAdding: .month, value: -1, to: now) ?? now
+    }
+    static func recent(_ workout: HealthWorkoutSummary, now: Date = .now, calendar: Calendar = .current) -> Bool {
+        workout.start >= start(now: now, calendar: calendar) && workout.end <= now && workout.end > workout.start
+    }
+    static func suppress(record: HealthSyncRecord?) -> Bool {
+        // Deletions and failed attempts belong in manual recovery, never automatic re-import.
+        record != nil
+    }
+    static func mayPrompt(_ decision: HealthDiscoveryDecision?, now: Date = .now) -> Bool {
+        guard let decision else { return true }
+        return decision.action == .later && now.timeIntervalSince(decision.date) >= 86400
+    }
+}
+
+enum HealthDiscoveryVerifier {
+    static func entries(workouts: [HealthWorkoutSummary], records: [HealthSyncRecord], server: String,
+                        client: DreeveAPIClient, now: Date = .now) async throws -> [HealthDiscoveryEntry] {
+        let eligible = workouts.filter { workout in
+            HealthDiscoveryPolicy.recent(workout, now: now) &&
+            !HealthDiscoveryPolicy.suppress(record: records.first { $0.server == server && $0.workout.id == workout.id })
+        }
+        guard let earliest = eligible.map(\.start).min() else { return [] }
+        // Include adjacent days for timezone differences when finding heuristic candidates.
+        let from = ActivityDates.calendarDate.string(from: earliest.addingTimeInterval(-2 * 86400))
+        var activities: [DreeveActivity] = []
+        var page = 1
+        var expected: Int?
+        while true {
+            try Task.checkCancellation()
+            let result = try await client.activities(page: page, size: 100, from: from)
+            guard result.pagination.page == page, result.pagination.totalPages >= 0,
+                  result.pagination.totalPages == (expected ?? result.pagination.totalPages),
+                  result.pagination.totalPages > 0 || result.activities.isEmpty,
+                  !result.activities.isEmpty || (page == 1 && result.pagination.totalPages <= 1) else {
+                throw APIError.decoding("Incomplete activity history. Import status could not be verified.")
+            }
+            expected = result.pagination.totalPages
+            activities += result.activities
+            if page >= result.pagination.totalPages { break }
+            page += 1
+        }
+        var entries: [HealthDiscoveryEntry] = []
+        for workout in eligible {
+            try Task.checkCancellation()
+            if let remote = try await HealthImportHistory.find(client: client, filenames: workout.importFilenames),
+               remote.status != "failed" { continue }
+            let matches = HealthWorkoutMatcher.candidates(for: workout, activities: activities)
+            entries.append(HealthDiscoveryEntry(workout: workout, status: matches.isEmpty ? .ready : .review))
+        }
+        return entries
+    }
+}

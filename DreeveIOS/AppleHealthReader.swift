@@ -6,6 +6,25 @@ import CoreLocation
 final class AppleHealthReader {
     private let store = HKHealthStore()
     private var workouts: [UUID: HKWorkout] = [:]
+    private var observer: HKObserverQuery?
+
+    func startObserving(onChange: @escaping @MainActor @Sendable () -> Void) {
+        stopObserving()
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+        let query = HKObserverQuery(sampleType: HKObjectType.workoutType(), predicate: nil) { _, completion, error in
+            completion()
+            guard error == nil else { return }
+            Task { @MainActor in onChange() }
+        }
+        observer = query
+        store.execute(query)
+    }
+
+    func stopObserving() {
+        if let observer { store.stop(observer) }
+        observer = nil
+    }
+
 
     func authorize(routes: Bool, heartRate: Bool) async throws {
         guard HKHealthStore.isHealthDataAvailable() else { throw HealthSyncError.unavailable }
@@ -16,6 +35,7 @@ final class AppleHealthReader {
         if routes { types.insert(HKSeriesType.workoutRoute()) }
         if heartRate { types.insert(HKQuantityType(.heartRate)) }
         try await store.requestAuthorization(toShare: [], read: types)
+        UserDefaults.standard.set(true, forKey: "health.authorizationRequested")
         // Request completion does not imply read permission was granted.
     }
 

@@ -8,6 +8,7 @@ struct DreeveApp: App {
     @StateObject private var goals = GoalPersistence()
     @StateObject private var session = DreeveSession()
     @StateObject private var healthSync = HealthSyncStore()
+    @StateObject private var healthDiscovery = HealthImportDiscovery()
 
     var body: some Scene {
         WindowGroup {
@@ -23,6 +24,7 @@ struct DreeveApp: App {
                 .environmentObject(session.goalProgress)
                 .environmentObject(session)
                 .environmentObject(healthSync)
+                .environmentObject(healthDiscovery)
                 .onChange(of: session.serverAddress) { old, new in
                     // Only an explicit connection change/logout clears the old scope.
                     // Initial unavailable storage or credentials must not clear it.
@@ -45,6 +47,11 @@ struct RootView: View {
     @EnvironmentObject private var persistence: GoalPersistence
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab = 0
+    @EnvironmentObject private var healthSync: HealthSyncStore
+    @EnvironmentObject private var healthDiscovery: HealthImportDiscovery
+    @AppStorage("health.discovery.enabled") private var discoverWorkouts = true
+    @AppStorage("health.includeRoutes") private var includeRoutes = true
+    @AppStorage("health.includeHeartRate") private var includeHeartRate = true
 
     var body: some View {
         Group {
@@ -65,6 +72,7 @@ struct RootView: View {
                     HealthSyncView()
                         .tabItem { Label("Health sync", systemImage: "heart") }
                         .tag(4)
+                        .badge(healthDiscovery.visibleEntries.count)
                     UploadView()
                         .tabItem { Label("Upload", systemImage: "square.and.arrow.up") }
                         .tag(5)
@@ -75,6 +83,32 @@ struct RootView: View {
                 .tint(DreeveTheme.accent)
             } else {
                 NavigationStack { SettingsView() }
+            }
+        }
+        .sheet(isPresented: $healthDiscovery.showingPrompt, onDismiss: { healthDiscovery.dismissedPrompt() }) {
+            HealthImportPrompt {
+                healthDiscovery.showingPrompt = false
+                selectedTab = 4
+            }
+        }
+        .onChange(of: session.serverAddress) { _, address in healthDiscovery.reset(server: address) }
+        .onReceive(healthSync.$records) { records in
+            healthDiscovery.noteRecords(records, server: session.serverAddress)
+        }
+        .task(id: "health|\(session.serverAddress)|\(scenePhase == .active)|\(discoverWorkouts)") {
+            guard scenePhase == .active, session.isConfigured, discoverWorkouts else {
+                healthDiscovery.stop()
+                return
+            }
+            await healthDiscovery.start(session: session, sync: healthSync, routes: includeRoutes, heartRate: includeHeartRate)
+            if !healthSync.isBusy { healthDiscovery.considerPrompt() }
+            while !Task.isCancelled {
+                // Retry a presentation after another sheet closes, without interrupting it.
+                for _ in 0..<10 {
+                    do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                    if !healthSync.isBusy { healthDiscovery.considerPrompt() }
+                }
+                await healthDiscovery.check(session: session, sync: healthSync)
             }
         }
         .onChange(of: scenePhase) { _, phase in

@@ -4,8 +4,10 @@ struct HealthSyncView: View {
     @EnvironmentObject private var session: DreeveSession
     @EnvironmentObject private var sync: HealthSyncStore
     @State private var from = Calendar.current.date(byAdding: .day, value: -30, to: .now) ?? .now
-    @State private var includeRoutes = true
-    @State private var includeHeartRate = true
+    @AppStorage("health.includeRoutes") private var includeRoutes = true
+    @AppStorage("health.includeHeartRate") private var includeHeartRate = true
+    @AppStorage("health.discovery.enabled") private var discoverWorkouts = true
+    @EnvironmentObject private var discovery: HealthImportDiscovery
     @State private var selected: Set<UUID> = []
     @State private var confirmSync = false
     @State private var retryWorkout: HealthWorkoutSummary?
@@ -21,6 +23,21 @@ struct HealthSyncView: View {
                             Label("Apple Health → Dreeve", systemImage: "heart.fill").font(.title2.bold())
                             Text("Choose workouts to send as FIT files, including available cadence and power. Apple Health is read only; Dreeve edits and deletions stay in Dreeve.")
                                 .font(.subheadline).foregroundStyle(DreeveTheme.muted)
+                            Toggle("Ask about new workouts", isOn: $discoverWorkouts)
+                            Text("Checks the last calendar month when the app opens and while it’s active. Nothing is uploaded without your approval.")
+                                .font(.caption).foregroundStyle(DreeveTheme.muted)
+                            if discovery.isChecking { ProgressView("Checking recent workouts…") }
+                            if !discovery.visibleEntries.isEmpty {
+                                Button("Review recent workouts (\(discovery.visibleEntries.count))") { discovery.review() }
+                                    .buttonStyle(.bordered)
+                            }
+                            if discovery.approvedCount > 0 {
+                                Text("\(discovery.approvedCount) approved workouts waiting for verification or import.")
+                                    .font(.caption).foregroundStyle(DreeveTheme.accent)
+                            }
+                            if let message = discovery.message {
+                                Text(message).font(.caption).foregroundStyle(DreeveTheme.muted)
+                            }
                             DatePicker("Workouts since", selection: $from, in: ...Date.now, displayedComponents: .date)
                             Toggle("Include workout routes", isOn: $includeRoutes)
                             Toggle("Include heart rate", isOn: $includeHeartRate)
@@ -41,8 +58,8 @@ struct HealthSyncView: View {
                     HStack {
                         Text("Workouts").font(.title3.bold())
                         Spacer()
-                        Button("Refresh status", systemImage: "arrow.clockwise") {
-                            Task { await sync.refresh(session: session) }
+                        Button("Refresh workouts", systemImage: "arrow.clockwise") {
+                            Task { await sync.load(session: session, from: from, routes: includeRoutes, heartRate: includeHeartRate) }
                         }.disabled(sync.isBusy)
                     }
                     if sync.isReady && sync.workouts.isEmpty {
@@ -77,7 +94,7 @@ struct HealthSyncView: View {
                 }
             }
             .navigationTitle("Health sync")
-            .task { if sync.isReady { await sync.refresh(session: session) } }
+            .task { await sync.load(session: session, from: from, routes: includeRoutes, heartRate: includeHeartRate) }
             .onChange(of: session.serverAddress) { _, _ in selected = [] }
             .confirmationDialog("Sync \(selected.count) workouts?", isPresented: $confirmSync, titleVisibility: .visible) {
                 Button("Send to Dreeve") {
