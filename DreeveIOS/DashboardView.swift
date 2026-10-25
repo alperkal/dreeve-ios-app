@@ -30,7 +30,7 @@ struct DashboardView: View {
 
                     if session.showsActivityIndexStatus { ActivityIndexStatusView() }
                     if persistence.container != nil {
-                        FavoriteGoalsView()
+                        FavoriteGoalsView(showsRefreshWarnings: !session.showsActivityIndexStatus)
                         CoachGoalsSection()
                     } else { CoachDashboardHost(goals: []) }
 

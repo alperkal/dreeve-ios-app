@@ -238,6 +238,7 @@ struct GoalEditorView: View {
 struct GoalProgressRow: View {
     @EnvironmentObject private var progress: GoalProgressStore
     let goal: TrainingGoal
+    var showsFreshnessWarning = true
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
             let value = progress.value(for: goal, now: timeline.date)
@@ -273,7 +274,7 @@ struct GoalProgressRow: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 } else { Text("Streak unavailable · refresh activity history").font(.caption).foregroundStyle(.secondary) }
-                if progress.isStale(now: timeline.date) { Text("Saved progress may be out of date").font(.caption).foregroundStyle(.orange) }
+                if showsFreshnessWarning && progress.isStale(now: timeline.date) { Text("Saved progress may be out of date").font(.caption).foregroundStyle(.orange) }
             }
             .padding(.vertical, 6)
         }
@@ -282,6 +283,7 @@ struct GoalProgressRow: View {
 
 struct GoalRefreshStatus: View {
     @EnvironmentObject private var progress: GoalProgressStore
+    var showsWarnings = true
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
             VStack(alignment: .leading, spacing: 4) {
@@ -290,14 +292,17 @@ struct GoalRefreshStatus: View {
                     Text("Progress updated \(refreshed.formatted(date: .abbreviated, time: .shortened))")
                         .font(.caption).foregroundStyle(.secondary)
                 } else { Text("Progress has not been fetched yet").font(.caption) }
-                if let error = progress.error { Text(error).font(.caption).foregroundStyle(.orange) }
-                else if progress.isStale(now: timeline.date) { Text("Progress is stale · refresh when connected").font(.caption).foregroundStyle(.orange) }
+                if showsWarnings {
+                    if let error = progress.error { Text(error).font(.caption).foregroundStyle(.orange) }
+                    else if progress.isStale(now: timeline.date) { Text("Progress is stale · refresh when connected").font(.caption).foregroundStyle(.orange) }
+                }
             }
         }
     }
 }
 
 struct FavoriteGoalsView: View {
+    var showsRefreshWarnings = true
     @EnvironmentObject private var progress: GoalProgressStore
     @Query private var storedGoals: [TrainingGoal]
     private var favorites: [TrainingGoal] {
@@ -312,8 +317,8 @@ struct FavoriteGoalsView: View {
                     NavigationLink("View all") { GoalsView() }
                 }
                 if favorites.isEmpty { Text("Choose up to two favorites in Goals.").font(.subheadline).foregroundStyle(.secondary) }
-                ForEach(favorites) { GoalProgressRow(goal: $0) }
-                GoalRefreshStatus()
+                ForEach(favorites) { GoalProgressRow(goal: $0, showsFreshnessWarning: false) }
+                GoalRefreshStatus(showsWarnings: showsRefreshWarnings)
             }
         }
     }
