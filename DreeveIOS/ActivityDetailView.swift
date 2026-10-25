@@ -301,8 +301,12 @@ struct ActivityEditorView: View {
         NavigationStack {
             Form {
                 TextField("Name", text: $name)
-                TextField("Sport type", text: $sportType)
-                    .textInputAutocapitalization(.never)
+                Picker("Activity type", selection: $sportType) {
+                    ForEach(ActivitySportTypes.options(including: activity.sportType), id: \.self) { type in
+                        Text(type).tag(type)
+                    }
+                }
+                .pickerStyle(.menu)
                 Section("Gear") {
                     Picker("Assigned gear", selection: $selectedGearID) {
                         Text("No gear").tag(String?.none)
@@ -332,11 +336,6 @@ struct ActivityEditorView: View {
                 }
                 Section("Description") {
                     TextEditor(text: $description).frame(minHeight: 100)
-                }
-                Section {
-                    Text("Sport type must match a Dreeve / Strava sport type, for example Run, Ride or Swim.")
-                        .font(.caption)
-                        .foregroundStyle(DreeveTheme.muted)
                 }
             }
             .disabled(saving)

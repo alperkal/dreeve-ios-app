@@ -230,3 +230,74 @@ func activitySymbol(_ type: String) -> String {
     default: return "figure.mixed.cardio"
     }
 }
+
+/// Exact API values from Dreeve's SportType enum. Keep virtual types distinct when editing.
+/// Source: https://github.com/dreeveapp/dreeve/blob/master/src/Domain/Activity/SportType/SportType.php
+enum ActivitySportTypes {
+    static let supported: [String] = [
+        "AlpineSki",
+        "BackcountrySki",
+        "Badminton",
+        "Basketball",
+        "Boxing",
+        "Canoeing",
+        "Cricket",
+        "Crossfit",
+        "Dance",
+        "EBikeRide",
+        "EMountainBikeRide",
+        "Elliptical",
+        "Golf",
+        "GravelRide",
+        "Handcycle",
+        "HighIntensityIntervalTraining",
+        "Hike",
+        "IceSkate",
+        "InlineSkate",
+        "Kayaking",
+        "Kitesurf",
+        "MountainBikeRide",
+        "NordicSki",
+        "OpenWaterSwim",
+        "Padel",
+        "PhysicalTherapy",
+        "Pickleball",
+        "Pilates",
+        "Racquetball",
+        "Ride",
+        "RockClimbing",
+        "RollerSki",
+        "Rowing",
+        "Run",
+        "Sail",
+        "Skateboard",
+        "Snowboard",
+        "Snowshoe",
+        "Soccer",
+        "Squash",
+        "StairStepper",
+        "StandUpPaddling",
+        "Surfing",
+        "Swim",
+        "TableTennis",
+        "Tennis",
+        "TrailRun",
+        "Velomobile",
+        "VirtualRide",
+        "VirtualRow",
+        "VirtualRun",
+        "Volleyball",
+        "Wakeboarding",
+        "Walk",
+        "WeightTraining",
+        "Wheelchair",
+        "Windsurf",
+        "Workout",
+        "Yoga",
+    ]
+
+    // A newer server may return a type this app does not yet know. Preserve it on edit.
+    static func options(including current: String) -> [String] {
+        Array(Set(supported + (current.isEmpty ? [] : [current]))).sorted()
+    }
+}

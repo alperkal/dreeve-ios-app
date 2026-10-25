@@ -28,7 +28,7 @@ A native, personal iPhone companion for a self-hosted Dreeve activity server: br
 | `DreeveIOS/GoalEngine.swift` | Pure calendar/progress/streak logic; also `ActivitySportFilter` for Overview drill-down. |
 | `DreeveIOS/GoalStore.swift` | `TrainingGoal`, `GoalPersistence` and `GoalProgressStore`; local/optional CloudKit definitions and cached derived progress. |
 | `DreeveIOS/DashboardView.swift`, `ActivitiesView.swift`, `GoalsView.swift` | Overview, general/gear/sport-filtered activity lists, goal management and favorite cards. |
-| `DreeveIOS/ActivityDetailView.swift`, `RouteMapView.swift`, `ActivityWebView.swift` | Detail/edit/delete, attached photos/full-screen viewer, routes and embedded website viewer. Photo viewer code is in the detail file. |
+| `DreeveIOS/ActivityDetailView.swift`, `RouteMapView.swift`, `ActivityWebView.swift` | Detail/edit/delete, attached photos/full-screen viewer, routes and embedded website viewer. Photo viewer code is in the detail file. The activity editor uses a sport-type dropdown from the supported API catalog in `Models.swift`, preserving unknown current types for forward compatibility. |
 | `DreeveIOS/AppleHealthReader.swift` | Read-only HealthKit workout, route and sensor queries; foreground workout observer. |
 | `DreeveIOS/HealthSyncCore.swift` | Workout DTOs, metric resampling, import journal/recovery/matching; discovery policy, decisions journal and server verifier. |
 | `DreeveIOS/HealthSyncStore.swift` | Manual and approved FIT upload orchestration, duplicate preflight, durable upload intent and server reconciliation. |
