@@ -248,8 +248,6 @@ struct ShareCardCanvasView: View {
                 }
             }
             Spacer(minLength: 0)
-            Text("DREEVE").font(.system(size: 22, weight: .heavy, design: .rounded)).tracking(5)
-                .foregroundStyle(DreeveTheme.accent).frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
     private func metric(_ label: String, _ value: String) -> some View {

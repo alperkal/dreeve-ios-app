@@ -129,7 +129,7 @@ FIT is the active Health export format because GPX loses telemetry. `HealthFITEx
 - Local activity-photo URLs resolve against the configured server/subpath; external HTTPS images retain their host. Website authentication is separate from API authentication. Failure needs explanation/Retry, not an endless spinner.
 - Activity-photo tap opens the loaded image full screen, with pinch/double-tap zoom and pan. Swipe down dismisses only when zoomed out, preserving zoomed panning.
 - “Open in Dreeve” uses `WKWebView` inside the app at `/activities/{activityId}`. Target-blank links stay in the same viewer. Do not add external Safari navigation or inject API bearer credentials into website requests.
-- Share card styles: Sticker = Copy Sticker only; Dark Map/Photo = Copy Sticker + Share Image with explicit Save to Photos. Add-only Photos permission suffices for saving.
+- Share card styles: Sticker = Copy Sticker only; Dark Map/Photo = Copy Sticker + Share Image with explicit Save to Photos. Add-only Photos permission suffices for saving. Shared overlays have no Dreeve wordmark.
 - Photo style defaults to the first attached activity image, supports switching among attachments, and still allows the system picker. With no attachment, require choosing a photo. Reject superseded/cancelled image loads. Subject segmentation is on-device; preserve map attribution, transparent PNGs, export dimensions and temporary-file cleanup. Generated cards are not uploaded to Dreeve/CloudKit.
 
 ## Widgets and training brief
