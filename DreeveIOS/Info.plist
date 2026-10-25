@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>GoalCloudContainer</key>
-	<string></string>
-	<key>DreeveAppGroup</key>
-	<string>$(DREEVE_APP_GROUP_IDENTIFIER)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -17,7 +13,9 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Save your finished Dreeve activity card to Photos.</string>
+	<key>DreeveAppGroup</key>
+	<string>$(DREEVE_APP_GROUP_IDENTIFIER)</string>
+	<key>GoalCloudContainer</key>
+	<string></string>
 </dict>
 </plist>

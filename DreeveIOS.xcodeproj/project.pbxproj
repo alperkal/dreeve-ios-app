@@ -6,136 +6,199 @@
 	objectVersion = 60;
 	objects = {
 
-/* Begin PBXCopyFilesBuildPhase section */
-		8425B0A1FE47904E40C3F775 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (51C1A0EEE6BAD3AC06D6331E, ); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
-		0448C692C58A8D6262748149 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = "$(CONTENTS_FOLDER_PATH)/Watch"; dstSubfolderSpec = 16; files = (2DE7ED5E5FDECE355FE379E3, ); name = "Embed Watch Content"; runOnlyForDeploymentPostprocessing = 0; };
-		1C6065CE5CB8E50F60689629 = {isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (F1479B290B690C9F589B6B9C, ); name = "Embed Watch Complications"; runOnlyForDeploymentPostprocessing = 0; };
-/* End PBXCopyFilesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		B3D88D370A90F846F7D783CD = {isa = PBXTargetDependency; target = 20CBCDC86B17A4120FC4764A; targetProxy = 425FFCFF49820A00052D2F51; };
-		B2C182A4488BB69414CFE1F7 = {isa = PBXTargetDependency; target = 48426E0A85A762D58F361977; targetProxy = EA04B83833C8DEE41ECBB197; };
-		35A6BF8C535B0786CE57B5F7 = {isa = PBXTargetDependency; target = 5B98B1AC4336E22CDE8C6DCB; targetProxy = 566772D3EADE37B2C0A3237C; };
-/* End PBXTargetDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		425FFCFF49820A00052D2F51 = {isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 20CBCDC86B17A4120FC4764A; remoteInfo = DreeveWidgets; };
-		EA04B83833C8DEE41ECBB197 = {isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 48426E0A85A762D58F361977; remoteInfo = DreeveWatch; };
-		566772D3EADE37B2C0A3237C = {isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 5B98B1AC4336E22CDE8C6DCB; remoteInfo = DreeveWatchWidgets; };
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXBuildFile section */
-		2E152BEAB5982F1ED19FC60D /* HealthImportDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AB8FF0A1396B39EFB0C5CE; };
-		6ADE15F811547922D0D980A4 /* ActivityWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBA7DB072F99638D143AA3; };
-		63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AB17A0059D9E34184D5C2B; };
-		53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7425E3C844D88C7D999C44; };
-		C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDBEE34FB3BE91EBADAB2D; };
-		67FE38706CBA8286E819FDE1 /* ShareCardSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636D0D017209B822AC039807; };
-		6FE721B27E1D989D980EDAE3 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343B7C0E6708F10C93E612E; };
-		1F9E7DACFA5FC66AAAEA4F92 /* RouteGeometryProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CD8F2F76490230023C5EA0; };
-		92A1DB1CEF608F2D84EF6D72 /* ActivitySyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E45613F0140D53AF32BCA; };
-		171C99C39DFB93ABA4B8F83F /* ActivityIndexStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C50CC4BAD79F93B1490373BA; };
 		03D5273652825B25C2F553A5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595A787F0534A2FB5A149FEF /* KeychainStore.swift */; };
+		071C886151785B474B8DA1FF /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0DFDF584F71302EE73BD52 /* GoalStore.swift */; };
 		157EC19375B2FF8F781EC900 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48327B073CAD0CAA6233C59 /* RouteMapView.swift */; };
+		171C99C39DFB93ABA4B8F83F /* ActivityIndexStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */; };
+		1A2F64498A727270F0920B77 /* Shared/GoalWatchData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F /* Shared/GoalWatchData.swift */; };
+		1D71618D806F15311494BDAE /* GoalWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F /* GoalWidgetData.swift */; };
+		1DC478016437456E23AC6888 /* DreeveWatch/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C47FD907E1034601AF297B64 /* DreeveWatch/Assets.xcassets */; };
+		1F9E7DACFA5FC66AAAEA4F92 /* RouteGeometryProjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CD8F2F76490230023C5EA0 /* RouteGeometryProjector.swift */; };
+		2C5D8A6D3BFAF5F417EAA7A1 /* GoalWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F /* GoalWidgetData.swift */; };
+		2DE7ED5E5FDECE355FE379E3 /* DreeveWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1FFD09EEFB4E1CE94876A2DB /* DreeveWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2E152BEAB5982F1ED19FC60D /* HealthImportDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AB8FF0A1396B39EFB0C5CE /* HealthImportDiscovery.swift */; };
 		3894EC9353AF6267D9A04E96 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D07B68E143C56935BEFD76F9 /* Assets.xcassets */; };
+		3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831CCA044730B4857B49325A /* HealthSyncStore.swift */; };
+		3BEC66DEFF512F121F95C3CC /* GoalWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F /* GoalWidgetData.swift */; };
+		3EACFD431DFB3C5D6A42BAD7 /* DreeveWatchWidgets/DreeveWatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C69FDF59D5748BA2F024390 /* DreeveWatchWidgets/DreeveWatchComplications.swift */; };
+		4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */; };
+		51C1A0EEE6BAD3AC06D6331E /* DreeveWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = E9CBCB8A2420B253F464EF89 /* DreeveWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		51DD18F2EFF4BB08CC2F11C1 /* HealthFITExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */; };
+		521D7FAE27F487B0F3503DFE /* GoalWidgetPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F926CEAB036AB59207B7D9 /* GoalWidgetPublisher.swift */; };
+		53DE24A9AB0F978BD2AB2204 /* CoachEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7425E3C844D88C7D999C44 /* CoachEngine.swift */; };
 		619342508AD7DB6322CB0498 /* ActivitiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */; };
+		63EE4BD4E10A8AC1C826C734 /* CoachCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */; };
+		654C7E78E9A5F3790A345A0A /* GoalWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F /* GoalWidgetData.swift */; };
+		67FE38706CBA8286E819FDE1 /* ShareCardSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636D0D017209B822AC039807 /* ShareCardSheetView.swift */; };
+		6ADE15F811547922D0D980A4 /* ActivityWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */; };
+		6FE721B27E1D989D980EDAE3 /* ShareCardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7343B7C0E6708F10C93E612E /* ShareCardRenderer.swift */; };
+		73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */; };
 		741685AD161B6210DD50A91F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42B5018550BC5DD2F6F2D770 /* Models.swift */; };
+		896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */; };
+		8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C5EAE17E9C252107C515A /* GearImageStore.swift */; };
+		90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF55C725D1FA70F2341A273 /* GearImageCore.swift */; };
+		92A1DB1CEF608F2D84EF6D72 /* ActivitySyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086E45613F0140D53AF32BCA /* ActivitySyncEngine.swift */; };
+		94FD6FE6D28B1BFC59AE15DF /* Shared/GoalWatchData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F /* Shared/GoalWatchData.swift */; };
 		9728FCF5BFD75018EDD71EE1 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8399F61B31F2F97A3A53B3 /* Theme.swift */; };
 		978D55847D47778C1A2209DC /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643F122F9B9CBFD3982547E9 /* DashboardView.swift */; };
+		99936785933D1314813A63D9 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8399F61B31F2F97A3A53B3 /* Theme.swift */; };
 		99E248A62A5410EC34904553 /* DreeveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F34B394951617BB03A04DBF /* DreeveApp.swift */; };
+		ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */; };
 		B66496CAB75B3E11A7D6F9AC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99609C103905761AB1D0C685 /* APIClient.swift */; };
 		B694A5D5B8BFE1A10222CC3D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C138BEAD3976A020207BBB96 /* SettingsView.swift */; };
+		C19C11AF983849A539CC5218 /* CoachContextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */; };
 		E1FCA19B7AA9DCDE4B0A7475 /* ActivityDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF1376147E58909AAA77389 /* ActivityDetailView.swift */; };
-		F21E29704BF3DB287740DA93 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D630ADBBEA7FFCED795502 /* Session.swift */; };
+		E2C5EF20244E9A1045E5484B /* DreeveWatch/DreeveWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B67CA7557A5B00381EC68770 /* DreeveWatch/DreeveWatchApp.swift */; };
 		E945A32AE48C32F262F4329D /* HealthSyncCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */; };
-		4716B290E9DAE0B0CDC041D7 /* AppleHealthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */; };
-		3B83E166697BF93EEB11C49E /* HealthSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 831CCA044730B4857B49325A /* HealthSyncStore.swift */; };
-		ACF2D427742EBC030A7DCB94 /* HealthSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */; };
-		896F1B26B4451ABECFB5913B /* GoalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */; };
-		071C886151785B474B8DA1FF /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0DFDF584F71302EE73BD52 /* GoalStore.swift */; };
 		E9DAECA709A8868ABBB7FC56 /* GoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */; };
-		90773B762C282DBE5A77B1C5 /* GearImageCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF55C725D1FA70F2341A273 /* GearImageCore.swift */; };
-		8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620C5EAE17E9C252107C515A /* GearImageStore.swift */; };
-		73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */; };
-		51DD18F2EFF4BB08CC2F11C1 /* HealthFITExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */; };
-		2C5D8A6D3BFAF5F417EAA7A1 = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F; };
-		521D7FAE27F487B0F3503DFE = {isa = PBXBuildFile; fileRef = 30F926CEAB036AB59207B7D9; };
-		654C7E78E9A5F3790A345A0A = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F; };
-		EE8A2531DE8EF0FB0ECD39DB = {isa = PBXBuildFile; fileRef = F7F0B23845A2E68819B300FD; };
-		99936785933D1314813A63D9 = {isa = PBXBuildFile; fileRef = 2B8399F61B31F2F97A3A53B3; };
-		51C1A0EEE6BAD3AC06D6331E = {isa = PBXBuildFile; fileRef = E9CBCB8A2420B253F464EF89; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		1A2F64498A727270F0920B77 = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F; };
-		FDE97676E6AD734BFAC0E30F = {isa = PBXBuildFile; fileRef = E575DAF6E1A84CCB9EE3A289; };
-		1D71618D806F15311494BDAE = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F; };
-		94FD6FE6D28B1BFC59AE15DF = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F; };
-		E2C5EF20244E9A1045E5484B = {isa = PBXBuildFile; fileRef = B67CA7557A5B00381EC68770; };
-		1DC478016437456E23AC6888 = {isa = PBXBuildFile; fileRef = C47FD907E1034601AF297B64; };
-		3BEC66DEFF512F121F95C3CC = {isa = PBXBuildFile; fileRef = 0636D48280DC61973188889F; };
-		EADB8A15D317D23B53120624 = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F; };
-		3EACFD431DFB3C5D6A42BAD7 = {isa = PBXBuildFile; fileRef = 7C69FDF59D5748BA2F024390; };
-		2DE7ED5E5FDECE355FE379E3 = {isa = PBXBuildFile; fileRef = 1FFD09EEFB4E1CE94876A2DB; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		F1479B290B690C9F589B6B9C = {isa = PBXBuildFile; fileRef = B7A4D893E8E90733FF5580D9; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EADB8A15D317D23B53120624 /* Shared/GoalWatchData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3892858E9508E3E125823A8F /* Shared/GoalWatchData.swift */; };
+		EE8A2531DE8EF0FB0ECD39DB /* DreeveGoalWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F0B23845A2E68819B300FD /* DreeveGoalWidgets.swift */; };
+		F1479B290B690C9F589B6B9C /* DreeveWatchWidgets.appex in Embed Watch Complications */ = {isa = PBXBuildFile; fileRef = B7A4D893E8E90733FF5580D9 /* DreeveWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F21E29704BF3DB287740DA93 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D630ADBBEA7FFCED795502 /* Session.swift */; };
+		FDE97676E6AD734BFAC0E30F /* DreeveIOS/PhoneGoalWatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E575DAF6E1A84CCB9EE3A289 /* DreeveIOS/PhoneGoalWatchBridge.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		425FFCFF49820A00052D2F51 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 20CBCDC86B17A4120FC4764A;
+			remoteInfo = DreeveWidgets;
+		};
+		566772D3EADE37B2C0A3237C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5B98B1AC4336E22CDE8C6DCB;
+			remoteInfo = DreeveWatchWidgets;
+		};
+		EA04B83833C8DEE41ECBB197 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 48426E0A85A762D58F361977;
+			remoteInfo = DreeveWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0448C692C58A8D6262748149 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				2DE7ED5E5FDECE355FE379E3 /* DreeveWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6065CE5CB8E50F60689629 /* Embed Watch Complications */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F1479B290B690C9F589B6B9C /* DreeveWatchWidgets.appex in Embed Watch Complications */,
+			);
+			name = "Embed Watch Complications";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8425B0A1FE47904E40C3F775 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				51C1A0EEE6BAD3AC06D6331E /* DreeveWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		F7AB8FF0A1396B39EFB0C5CE /* HealthImportDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImportDiscovery.swift; sourceTree = "<group>"; };
-		CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityWebView.swift; sourceTree = "<group>"; };
-		A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
-		1B7425E3C844D88C7D999C44 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
-		67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachContextBuilder.swift; sourceTree = "<group>"; };
-		636D0D017209B822AC039807 /* ShareCardSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardSheetView.swift; sourceTree = "<group>"; };
-		7343B7C0E6708F10C93E612E /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
-		C9CD8F2F76490230023C5EA0 /* RouteGeometryProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteGeometryProjector.swift; sourceTree = "<group>"; };
+		0289091E76AAE36D4B848D66 /* DreeveWatchWidgets/DreeveWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveWatchWidgets/DreeveWatchWidgets.entitlements; sourceTree = SOURCE_ROOT; };
+		0636D48280DC61973188889F /* GoalWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalWidgetData.swift; sourceTree = "<group>"; };
 		086E45613F0140D53AF32BCA /* ActivitySyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySyncEngine.swift; sourceTree = "<group>"; };
-		C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndexStore.swift; sourceTree = "<group>"; };
 		08C29F9AAE02BB9BB0C95E3A /* DreeveIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DreeveIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncCore.swift; sourceTree = "<group>"; };
 		10D630ADBBEA7FFCED795502 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
+		1B7425E3C844D88C7D999C44 /* CoachEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachEngine.swift; sourceTree = "<group>"; };
+		1FFD09EEFB4E1CE94876A2DB /* DreeveWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = DreeveWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncView.swift; sourceTree = "<group>"; };
+		276703BD9B36D013E3A1B553 /* DreeveWatchWidgets/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = DreeveWatchWidgets/Info.plist; sourceTree = SOURCE_ROOT; };
 		2B8399F61B31F2F97A3A53B3 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		30F926CEAB036AB59207B7D9 /* GoalWidgetPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalWidgetPublisher.swift; sourceTree = "<group>"; };
+		3892858E9508E3E125823A8F /* Shared/GoalWatchData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/GoalWatchData.swift; sourceTree = SOURCE_ROOT; };
+		3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearView.swift; sourceTree = "<group>"; };
+		3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-iCloud.plist"; sourceTree = "<group>"; };
 		3F34B394951617BB03A04DBF /* DreeveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveApp.swift; sourceTree = "<group>"; };
+		40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalEngine.swift; sourceTree = "<group>"; };
 		42B5018550BC5DD2F6F2D770 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		46CEAEC8C81DFBE86EAA0A74 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		53D7410056910A0F736E4321 /* DreeveIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS.entitlements; sourceTree = "<group>"; };
+		544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
 		595A787F0534A2FB5A149FEF /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		620C5EAE17E9C252107C515A /* GearImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageStore.swift; sourceTree = "<group>"; };
+		636D0D017209B822AC039807 /* ShareCardSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardSheetView.swift; sourceTree = "<group>"; };
 		643F122F9B9CBFD3982547E9 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		67DDBEE34FB3BE91EBADAB2D /* CoachContextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachContextBuilder.swift; sourceTree = "<group>"; };
 		6E8B67F866D5C72AE3EABA68 /* ActivitiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitiesView.swift; sourceTree = "<group>"; };
+		7343B7C0E6708F10C93E612E /* ShareCardRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCardRenderer.swift; sourceTree = "<group>"; };
+		7C69FDF59D5748BA2F024390 /* DreeveWatchWidgets/DreeveWatchComplications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveWatchWidgets/DreeveWatchComplications.swift; sourceTree = SOURCE_ROOT; };
+		831CCA044730B4857B49325A /* HealthSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncStore.swift; sourceTree = "<group>"; };
+		8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthReader.swift; sourceTree = "<group>"; };
 		99609C103905761AB1D0C685 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		A0CA349CF549B89543F6C716 /* DreeveWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveWidgets.entitlements; sourceTree = "<group>"; };
+		A7AB17A0059D9E34184D5C2B /* CoachCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCardView.swift; sourceTree = "<group>"; };
+		B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthFITExporter.swift; sourceTree = "<group>"; };
+		B62B3E47007F38142BBD13E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B67CA7557A5B00381EC68770 /* DreeveWatch/DreeveWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveWatch/DreeveWatchApp.swift; sourceTree = SOURCE_ROOT; };
+		B7A4D893E8E90733FF5580D9 /* DreeveWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = DreeveWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BCF55C725D1FA70F2341A273 /* GearImageCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageCore.swift; sourceTree = "<group>"; };
+		C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DreeveIOS-iCloud.entitlements"; sourceTree = "<group>"; };
 		C138BEAD3976A020207BBB96 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C47FD907E1034601AF297B64 /* DreeveWatch/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = DreeveWatch/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		C50CC4BAD79F93B1490373BA /* ActivityIndexStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityIndexStore.swift; sourceTree = "<group>"; };
+		C984373622DCE3CD042F5C3E /* DreeveWatch/DreeveWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveWatch/DreeveWatch.entitlements; sourceTree = SOURCE_ROOT; };
+		C9CD8F2F76490230023C5EA0 /* RouteGeometryProjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteGeometryProjector.swift; sourceTree = "<group>"; };
+		CCDBA7DB072F99638D143AA3 /* ActivityWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityWebView.swift; sourceTree = "<group>"; };
 		CDF1376147E58909AAA77389 /* ActivityDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityDetailView.swift; sourceTree = "<group>"; };
 		D07B68E143C56935BEFD76F9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D48327B073CAD0CAA6233C59 /* RouteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteMapView.swift; sourceTree = "<group>"; };
-		10035A8EB5353CABE6A54287 /* HealthSyncCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncCore.swift; sourceTree = "<group>"; };
-		8A972D67840CDCB5DBACABD7 /* AppleHealthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthReader.swift; sourceTree = "<group>"; };
-		831CCA044730B4857B49325A /* HealthSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncStore.swift; sourceTree = "<group>"; };
-		224268FA8C48DAFD2C9C5712 /* HealthSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthSyncView.swift; sourceTree = "<group>"; };
-		40B23FB6FC7D687FF0EF8557 /* GoalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalEngine.swift; sourceTree = "<group>"; };
-		FA0DFDF584F71302EE73BD52 /* GoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalStore.swift; sourceTree = "<group>"; };
-		544F1CEB3632B44C0FCB1F41 /* GoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalsView.swift; sourceTree = "<group>"; };
-		B62B3E47007F38142BBD13E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		53D7410056910A0F736E4321 /* DreeveIOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS.entitlements; sourceTree = "<group>"; };
-		C0C863B495DFE7234E3010ED /* DreeveIOS-iCloud.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveIOS-iCloud.entitlements; sourceTree = "<group>"; };
-		3CA52425DEE7D48FFCE85937 /* Info-iCloud.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info-iCloud.plist; sourceTree = "<group>"; };
-		BCF55C725D1FA70F2341A273 /* GearImageCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageCore.swift; sourceTree = "<group>"; };
-		620C5EAE17E9C252107C515A /* GearImageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearImageStore.swift; sourceTree = "<group>"; };
-		3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearView.swift; sourceTree = "<group>"; };
-		B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthFITExporter.swift; sourceTree = "<group>"; };
-		0636D48280DC61973188889F /* GoalWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalWidgetData.swift; sourceTree = "<group>"; };
-		30F926CEAB036AB59207B7D9 /* GoalWidgetPublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalWidgetPublisher.swift; sourceTree = "<group>"; };
-		F7F0B23845A2E68819B300FD /* DreeveGoalWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveGoalWidgets.swift; sourceTree = "<group>"; };
-		A0CA349CF549B89543F6C716 /* DreeveWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveWidgets.entitlements; sourceTree = "<group>"; };
-		46CEAEC8C81DFBE86EAA0A74 /* WidgetInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E575DAF6E1A84CCB9EE3A289 /* DreeveIOS/PhoneGoalWatchBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveIOS/PhoneGoalWatchBridge.swift; sourceTree = SOURCE_ROOT; };
 		E9CBCB8A2420B253F464EF89 /* DreeveWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = DreeveWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		3892858E9508E3E125823A8F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/GoalWatchData.swift"; sourceTree = SOURCE_ROOT; };
-		E575DAF6E1A84CCB9EE3A289 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DreeveIOS/PhoneGoalWatchBridge.swift"; sourceTree = SOURCE_ROOT; };
-		B67CA7557A5B00381EC68770 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DreeveWatch/DreeveWatchApp.swift"; sourceTree = SOURCE_ROOT; };
-		7C69FDF59D5748BA2F024390 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DreeveWatchWidgets/DreeveWatchComplications.swift"; sourceTree = SOURCE_ROOT; };
-		EE47EEA5A4B1EA4F9EF51F8C = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DreeveWatch/Info.plist"; sourceTree = SOURCE_ROOT; };
-		276703BD9B36D013E3A1B553 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "DreeveWatchWidgets/Info.plist"; sourceTree = SOURCE_ROOT; };
-		C984373622DCE3CD042F5C3E = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DreeveWatch/DreeveWatch.entitlements"; sourceTree = SOURCE_ROOT; };
-		0289091E76AAE36D4B848D66 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "DreeveWatchWidgets/DreeveWatchWidgets.entitlements"; sourceTree = SOURCE_ROOT; };
-		C47FD907E1034601AF297B64 = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "DreeveWatch/Assets.xcassets"; sourceTree = SOURCE_ROOT; };
-		1FFD09EEFB4E1CE94876A2DB = {isa = PBXFileReference; explicitFileType = "wrapper.application"; path = DreeveWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		B7A4D893E8E90733FF5580D9 = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = DreeveWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE47EEA5A4B1EA4F9EF51F8C /* DreeveWatch/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = DreeveWatch/Info.plist; sourceTree = SOURCE_ROOT; };
+		F7AB8FF0A1396B39EFB0C5CE /* HealthImportDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthImportDiscovery.swift; sourceTree = "<group>"; };
+		F7F0B23845A2E68819B300FD /* DreeveGoalWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreeveGoalWidgets.swift; sourceTree = "<group>"; };
+		FA0DFDF584F71302EE73BD52 /* GoalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		291863700D5373845170F088 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9F6DF78383E1DF688A4B10D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD8779D7BB91A9DE46161A49 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E941DA8187B32B086A8E8098 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -143,41 +206,53 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		9F6DF78383E1DF688A4B10D3 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		BD8779D7BB91A9DE46161A49 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		291863700D5373845170F088 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		4FDE57E4B72FFCEE306CEB0F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B7A4D893E8E90733FF5580D9,
-				1FFD09EEFB4E1CE94876A2DB,
-				E9CBCB8A2420B253F464EF89,
-
+				B7A4D893E8E90733FF5580D9 /* DreeveWatchWidgets.appex */,
+				1FFD09EEFB4E1CE94876A2DB /* DreeveWatch.app */,
+				E9CBCB8A2420B253F464EF89 /* DreeveWidgets.appex */,
 				08C29F9AAE02BB9BB0C95E3A /* DreeveIOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B7B650F2EFFED28113B39CA9 /* DreeveWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				F7F0B23845A2E68819B300FD /* DreeveGoalWidgets.swift */,
+				A0CA349CF549B89543F6C716 /* DreeveWidgets.entitlements */,
+				46CEAEC8C81DFBE86EAA0A74 /* Info.plist */,
+			);
+			path = DreeveWidgets;
+			sourceTree = "<group>";
+		};
 		BDE88D77EBDC01774960BE71 = {
 			isa = PBXGroup;
 			children = (
-				ECCA59E2D8E99DF6684B6C95,
-				D512325B28D90B99AE1C33DD,
-				B7B650F2EFFED28113B39CA9,
-
+				ECCA59E2D8E99DF6684B6C95 /* Apple Watch */,
+				D512325B28D90B99AE1C33DD /* Shared */,
+				B7B650F2EFFED28113B39CA9 /* DreeveWidgets */,
 				DD48BDD2E20000D9CE524826 /* DreeveIOS */,
 				4FDE57E4B72FFCEE306CEB0F /* Products */,
 			);
 			sourceTree = "<group>";
 		};
+		D512325B28D90B99AE1C33DD /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				0636D48280DC61973188889F /* GoalWidgetData.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		DD48BDD2E20000D9CE524826 /* DreeveIOS */ = {
 			isa = PBXGroup;
 			children = (
-				30F926CEAB036AB59207B7D9,
-
+				30F926CEAB036AB59207B7D9 /* GoalWidgetPublisher.swift */,
 				B42D10A7CA258267C91DF0D3 /* HealthFITExporter.swift */,
 				3C5163F5E0A02F8CAAEDCD53 /* GearView.swift */,
 				620C5EAE17E9C252107C515A /* GearImageStore.swift */,
@@ -219,9 +294,22 @@
 			path = DreeveIOS;
 			sourceTree = "<group>";
 		};
-		D512325B28D90B99AE1C33DD = {isa = PBXGroup; children = (0636D48280DC61973188889F, ); path = Shared; sourceTree = "<group>"; };
-		B7B650F2EFFED28113B39CA9 = {isa = PBXGroup; children = (F7F0B23845A2E68819B300FD, A0CA349CF549B89543F6C716, 46CEAEC8C81DFBE86EAA0A74, ); path = DreeveWidgets; sourceTree = "<group>"; };
-		ECCA59E2D8E99DF6684B6C95 = {isa = PBXGroup; children = (3892858E9508E3E125823A8F, E575DAF6E1A84CCB9EE3A289, B67CA7557A5B00381EC68770, 7C69FDF59D5748BA2F024390, EE47EEA5A4B1EA4F9EF51F8C, 276703BD9B36D013E3A1B553, C984373622DCE3CD042F5C3E, 0289091E76AAE36D4B848D66, C47FD907E1034601AF297B64, ); name = "Apple Watch"; sourceTree = "<group>"; };
+		ECCA59E2D8E99DF6684B6C95 /* Apple Watch */ = {
+			isa = PBXGroup;
+			children = (
+				3892858E9508E3E125823A8F /* Shared/GoalWatchData.swift */,
+				E575DAF6E1A84CCB9EE3A289 /* DreeveIOS/PhoneGoalWatchBridge.swift */,
+				B67CA7557A5B00381EC68770 /* DreeveWatch/DreeveWatchApp.swift */,
+				7C69FDF59D5748BA2F024390 /* DreeveWatchWidgets/DreeveWatchComplications.swift */,
+				EE47EEA5A4B1EA4F9EF51F8C /* DreeveWatch/Info.plist */,
+				276703BD9B36D013E3A1B553 /* DreeveWatchWidgets/Info.plist */,
+				C984373622DCE3CD042F5C3E /* DreeveWatch/DreeveWatch.entitlements */,
+				0289091E76AAE36D4B848D66 /* DreeveWatchWidgets/DreeveWatchWidgets.entitlements */,
+				C47FD907E1034601AF297B64 /* DreeveWatch/Assets.xcassets */,
+			);
+			name = "Apple Watch";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -229,9 +317,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2FB41ADD168EA12731D8F1FE /* Build configuration list for PBXNativeTarget "DreeveIOS" */;
 			buildPhases = (
-				0448C692C58A8D6262748149,
-				8425B0A1FE47904E40C3F775,
-
+				0448C692C58A8D6262748149 /* Embed Watch Content */,
+				8425B0A1FE47904E40C3F775 /* Embed App Extensions */,
 				5B1B2B2ECB524BA8C71F3188 /* Sources */,
 				E941DA8187B32B086A8E8098 /* Frameworks */,
 				C5926192950FAB508AE8C163 /* Resources */,
@@ -239,18 +326,67 @@
 			buildRules = (
 			);
 			dependencies = (
-				B2C182A4488BB69414CFE1F7,
-				B3D88D370A90F846F7D783CD,
-
+				B2C182A4488BB69414CFE1F7 /* PBXTargetDependency */,
+				B3D88D370A90F846F7D783CD /* PBXTargetDependency */,
 			);
 			name = DreeveIOS;
 			productName = DreeveIOS;
 			productReference = 08C29F9AAE02BB9BB0C95E3A /* DreeveIOS.app */;
 			productType = "com.apple.product-type.application";
 		};
-		20CBCDC86B17A4120FC4764A /* DreeveWidgets */ = {isa = PBXNativeTarget; buildConfigurationList = AE3DAACA3C5018475BA3F7DA; buildPhases = (2C4B8F5DC8AF547BFA4B7CD1, 9F6DF78383E1DF688A4B10D3, A49B27B1EE01BFAAE09F5E72, ); buildRules = (); dependencies = (); name = DreeveWidgets; productName = DreeveWidgets; productReference = E9CBCB8A2420B253F464EF89; productType = "com.apple.product-type.app-extension"; };
-		48426E0A85A762D58F361977 = {isa = PBXNativeTarget; buildConfigurationList = 5BF3B6BB4A3841E0F4BF1BF0; buildPhases = (2BBE34935215C850EF2DF296, BD8779D7BB91A9DE46161A49, 11A74EE67E439339C20E3BD1, 1C6065CE5CB8E50F60689629, ); buildRules = (); dependencies = (35A6BF8C535B0786CE57B5F7, ); name = DreeveWatch; productName = DreeveWatch; productReference = 1FFD09EEFB4E1CE94876A2DB; productType = "com.apple.product-type.application"; };
-		5B98B1AC4336E22CDE8C6DCB = {isa = PBXNativeTarget; buildConfigurationList = B7ECB349DD6E2DD083B81E0C; buildPhases = (8BCA254049FF5F424A102C9E, 291863700D5373845170F088, 95910381EA9300ABC7AE9A2F, ); buildRules = (); dependencies = (); name = DreeveWatchWidgets; productName = DreeveWatchWidgets; productReference = B7A4D893E8E90733FF5580D9; productType = "com.apple.product-type.app-extension"; };
+		20CBCDC86B17A4120FC4764A /* DreeveWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AE3DAACA3C5018475BA3F7DA /* Build configuration list for PBXNativeTarget "DreeveWidgets" */;
+			buildPhases = (
+				2C4B8F5DC8AF547BFA4B7CD1 /* Sources */,
+				9F6DF78383E1DF688A4B10D3 /* Frameworks */,
+				A49B27B1EE01BFAAE09F5E72 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DreeveWidgets;
+			productName = DreeveWidgets;
+			productReference = E9CBCB8A2420B253F464EF89 /* DreeveWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		48426E0A85A762D58F361977 /* DreeveWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BF3B6BB4A3841E0F4BF1BF0 /* Build configuration list for PBXNativeTarget "DreeveWatch" */;
+			buildPhases = (
+				2BBE34935215C850EF2DF296 /* Sources */,
+				BD8779D7BB91A9DE46161A49 /* Frameworks */,
+				11A74EE67E439339C20E3BD1 /* Resources */,
+				1C6065CE5CB8E50F60689629 /* Embed Watch Complications */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				35A6BF8C535B0786CE57B5F7 /* PBXTargetDependency */,
+			);
+			name = DreeveWatch;
+			productName = DreeveWatch;
+			productReference = 1FFD09EEFB4E1CE94876A2DB /* DreeveWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5B98B1AC4336E22CDE8C6DCB /* DreeveWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7ECB349DD6E2DD083B81E0C /* Build configuration list for PBXNativeTarget "DreeveWatchWidgets" */;
+			buildPhases = (
+				8BCA254049FF5F424A102C9E /* Sources */,
+				291863700D5373845170F088 /* Frameworks */,
+				95910381EA9300ABC7AE9A2F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DreeveWatchWidgets;
+			productName = DreeveWatchWidgets;
+			productReference = B7A4D893E8E90733FF5580D9 /* DreeveWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -260,13 +396,40 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					48426E0A85A762D58F361977 = {CreatedOnToolsVersion = 16.0; SystemCapabilities = {com.apple.ApplicationGroups.iOS = {enabled = 1; }; }; };
-					5B98B1AC4336E22CDE8C6DCB = {CreatedOnToolsVersion = 16.0; SystemCapabilities = {com.apple.ApplicationGroups.iOS = {enabled = 1; }; }; };
-
-					20CBCDC86B17A4120FC4764A = {CreatedOnToolsVersion = 16.0; SystemCapabilities = {com.apple.ApplicationGroups.iOS = {enabled = 1; }; }; };
 					0E8A3AD980EC179856012B7E = {
 						CreatedOnToolsVersion = 16.0;
-                        SystemCapabilities = { com.apple.HealthKit = { enabled = 1; }; com.apple.ApplicationGroups.iOS = { enabled = 1; }; };
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+							com.apple.HealthKit = {
+								enabled = 1;
+							};
+						};
+					};
+					20CBCDC86B17A4120FC4764A = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
+					48426E0A85A762D58F361977 = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
+					};
+					5B98B1AC4336E22CDE8C6DCB = {
+						CreatedOnToolsVersion = 16.0;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -283,14 +446,37 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5B98B1AC4336E22CDE8C6DCB,				48426E0A85A762D58F361977,				20CBCDC86B17A4120FC4764A,
-
+				5B98B1AC4336E22CDE8C6DCB /* DreeveWatchWidgets */,
+				48426E0A85A762D58F361977 /* DreeveWatch */,
+				20CBCDC86B17A4120FC4764A /* DreeveWidgets */,
 				0E8A3AD980EC179856012B7E /* DreeveIOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		11A74EE67E439339C20E3BD1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1DC478016437456E23AC6888 /* DreeveWatch/Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		95910381EA9300ABC7AE9A2F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A49B27B1EE01BFAAE09F5E72 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C5926192950FAB508AE8C163 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -299,21 +485,37 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A49B27B1EE01BFAAE09F5E72 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		11A74EE67E439339C20E3BD1 = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (1DC478016437456E23AC6888, ); runOnlyForDeploymentPostprocessing = 0; };
-		95910381EA9300ABC7AE9A2F = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2BBE34935215C850EF2DF296 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D71618D806F15311494BDAE /* GoalWidgetData.swift in Sources */,
+				94FD6FE6D28B1BFC59AE15DF /* Shared/GoalWatchData.swift in Sources */,
+				E2C5EF20244E9A1045E5484B /* DreeveWatch/DreeveWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2C4B8F5DC8AF547BFA4B7CD1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				654C7E78E9A5F3790A345A0A /* GoalWidgetData.swift in Sources */,
+				EE8A2531DE8EF0FB0ECD39DB /* DreeveGoalWidgets.swift in Sources */,
+				99936785933D1314813A63D9 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5B1B2B2ECB524BA8C71F3188 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FDE97676E6AD734BFAC0E30F,
-				1A2F64498A727270F0920B77,
-				2C5D8A6D3BFAF5F417EAA7A1,
-				521D7FAE27F487B0F3503DFE,
-
+				FDE97676E6AD734BFAC0E30F /* DreeveIOS/PhoneGoalWatchBridge.swift in Sources */,
+				1A2F64498A727270F0920B77 /* Shared/GoalWatchData.swift in Sources */,
+				2C5D8A6D3BFAF5F417EAA7A1 /* GoalWidgetData.swift in Sources */,
+				521D7FAE27F487B0F3503DFE /* GoalWidgetPublisher.swift in Sources */,
 				51DD18F2EFF4BB08CC2F11C1 /* HealthFITExporter.swift in Sources */,
 				73ABF4AC34A4E1C440352B1C /* GearView.swift in Sources */,
 				8E06F7A252AB4CFF94D243D1 /* GearImageStore.swift in Sources */,
@@ -349,22 +551,48 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		2C4B8F5DC8AF547BFA4B7CD1 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (654C7E78E9A5F3790A345A0A, EE8A2531DE8EF0FB0ECD39DB, 99936785933D1314813A63D9, ); runOnlyForDeploymentPostprocessing = 0; };
-		2BBE34935215C850EF2DF296 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (1D71618D806F15311494BDAE, 94FD6FE6D28B1BFC59AE15DF, E2C5EF20244E9A1045E5484B, ); runOnlyForDeploymentPostprocessing = 0; };
-		8BCA254049FF5F424A102C9E = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (3BEC66DEFF512F121F95C3CC, EADB8A15D317D23B53120624, 3EACFD431DFB3C5D6A42BAD7, ); runOnlyForDeploymentPostprocessing = 0; };
+		8BCA254049FF5F424A102C9E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BEC66DEFF512F121F95C3CC /* GoalWidgetData.swift in Sources */,
+				EADB8A15D317D23B53120624 /* Shared/GoalWatchData.swift in Sources */,
+				3EACFD431DFB3C5D6A42BAD7 /* DreeveWatchWidgets/DreeveWatchComplications.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		35A6BF8C535B0786CE57B5F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5B98B1AC4336E22CDE8C6DCB /* DreeveWatchWidgets */;
+			targetProxy = 566772D3EADE37B2C0A3237C /* PBXContainerItemProxy */;
+		};
+		B2C182A4488BB69414CFE1F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 48426E0A85A762D58F361977 /* DreeveWatch */;
+			targetProxy = EA04B83833C8DEE41ECBB197 /* PBXContainerItemProxy */;
+		};
+		B3D88D370A90F846F7D783CD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 20CBCDC86B17A4120FC4764A /* DreeveWidgets */;
+			targetProxy = 425FFCFF49820A00052D2F51 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		12A90432DFB09C87E28E924A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
-                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DreeveIOS/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished Dreeve activity card to Photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -375,6 +603,31 @@
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
+		};
+		213D4B8241C36CBE3CEF0309 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DreeveWatch/DreeveWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Dreeve;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
 		};
 		2A1E782C07D4DF3E5A397B81 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -401,8 +654,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = R75QD84QEJ;
+				DREEVE_APP_BUNDLE_IDENTIFIER = app.dreeve.ios.starter;
+				DREEVE_APP_GROUP_IDENTIFIER = "group.$(DREEVE_APP_BUNDLE_IDENTIFIER).goals";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -415,12 +671,9 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-                CURRENT_PROJECT_VERSION = 1;
-                MARKETING_VERSION = 1.0;
-                DREEVE_APP_BUNDLE_IDENTIFIER = app.dreeve.ios.starter;
-                DREEVE_APP_GROUP_IDENTIFIER = "group.$(DREEVE_APP_BUNDLE_IDENTIFIER).goals";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -428,16 +681,43 @@
 			};
 			name = Debug;
 		};
+		3C162B2FEE077730D428AE29 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveWatchWidgets/DreeveWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp.GoalsWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		424ABC2FCE8161A09E7FE043 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-                CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
-                INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveIOS/DreeveIOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DreeveIOS/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Choose Apple Health workouts to sync summaries, cadence, power, optional routes and heart rate to your Dreeve server.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished Dreeve activity card to Photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -446,6 +726,57 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		430D03C7BF93184906531700 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DreeveWatch/DreeveWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Dreeve;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		46F327E5ECD471E5117BD4E8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveWatchWidgets/DreeveWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp.GoalsWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -474,8 +805,11 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = R75QD84QEJ;
+				DREEVE_APP_BUNDLE_IDENTIFIER = app.dreeve.ios.starter;
+				DREEVE_APP_GROUP_IDENTIFIER = "group.$(DREEVE_APP_BUNDLE_IDENTIFIER).goals";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -488,11 +822,8 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
 				SDKROOT = iphoneos;
-                CURRENT_PROJECT_VERSION = 1;
-                MARKETING_VERSION = 1.0;
-                DREEVE_APP_BUNDLE_IDENTIFIER = app.dreeve.ios.starter;
-                DREEVE_APP_GROUP_IDENTIFIER = "group.$(DREEVE_APP_BUNDLE_IDENTIFIER).goals";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -501,12 +832,52 @@
 			};
 			name = Release;
 		};
-		5E55E022FFE48C93491DF32E = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CODE_SIGN_ENTITLEMENTS = DreeveWidgets/DreeveWidgets.entitlements; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = DreeveWidgets/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals"; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).GoalsWidget"; PRODUCT_NAME = "$(TARGET_NAME)"; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );}; name = Debug; };
-		78CDD7BEE7BCE6691F78BA40 = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CODE_SIGN_STYLE = Automatic; CODE_SIGN_ENTITLEMENTS = DreeveWidgets/DreeveWidgets.entitlements; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = DreeveWidgets/Info.plist; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals"; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).GoalsWidget"; PRODUCT_NAME = "$(TARGET_NAME)"; SKIP_INSTALL = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@executable_path/../../Frameworks", );}; name = Release; };
-		430D03C7BF93184906531700 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = "watchos"; SUPPORTED_PLATFORMS = "watchos watchsimulator"; WATCHOS_DEPLOYMENT_TARGET = "10.0"; TARGETED_DEVICE_FAMILY = "4"; SWIFT_VERSION = "5.0"; CODE_SIGN_STYLE = "Automatic"; CODE_SIGN_ENTITLEMENTS = "DreeveWatch/DreeveWatch.entitlements"; INFOPLIST_FILE = "DreeveWatch/Info.plist"; GENERATE_INFOPLIST_FILE = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp"; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; SWIFT_EMIT_LOC_STRINGS = "YES"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";}; name = Debug; };
-		213D4B8241C36CBE3CEF0309 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = "watchos"; SUPPORTED_PLATFORMS = "watchos watchsimulator"; WATCHOS_DEPLOYMENT_TARGET = "10.0"; TARGETED_DEVICE_FAMILY = "4"; SWIFT_VERSION = "5.0"; CODE_SIGN_STYLE = "Automatic"; CODE_SIGN_ENTITLEMENTS = "DreeveWatch/DreeveWatch.entitlements"; INFOPLIST_FILE = "DreeveWatch/Info.plist"; GENERATE_INFOPLIST_FILE = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp"; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; SWIFT_EMIT_LOC_STRINGS = "YES"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";}; name = Release; };
-		3C162B2FEE077730D428AE29 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = "watchos"; SUPPORTED_PLATFORMS = "watchos watchsimulator"; WATCHOS_DEPLOYMENT_TARGET = "10.0"; TARGETED_DEVICE_FAMILY = "4"; SWIFT_VERSION = "5.0"; CODE_SIGN_STYLE = "Automatic"; CODE_SIGN_ENTITLEMENTS = "DreeveWatchWidgets/DreeveWatchWidgets.entitlements"; INFOPLIST_FILE = "DreeveWatchWidgets/Info.plist"; GENERATE_INFOPLIST_FILE = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp.GoalsWidget"; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; SWIFT_EMIT_LOC_STRINGS = "YES"; APPLICATION_EXTENSION_API_ONLY = "YES";}; name = Debug; };
-		46F327E5ECD471E5117BD4E8 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = "watchos"; SUPPORTED_PLATFORMS = "watchos watchsimulator"; WATCHOS_DEPLOYMENT_TARGET = "10.0"; TARGETED_DEVICE_FAMILY = "4"; SWIFT_VERSION = "5.0"; CODE_SIGN_STYLE = "Automatic"; CODE_SIGN_ENTITLEMENTS = "DreeveWatchWidgets/DreeveWatchWidgets.entitlements"; INFOPLIST_FILE = "DreeveWatchWidgets/Info.plist"; GENERATE_INFOPLIST_FILE = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).watchkitapp.GoalsWidget"; INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; SWIFT_EMIT_LOC_STRINGS = "YES"; APPLICATION_EXTENSION_API_ONLY = "YES";}; name = Release; };
+		5E55E022FFE48C93491DF32E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveWidgets/DreeveWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).GoalsWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		78CDD7BEE7BCE6691F78BA40 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = DreeveWidgets/DreeveWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DreeveWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Dreeve Goals";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DREEVE_APP_BUNDLE_IDENTIFIER).GoalsWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -528,9 +899,33 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AE3DAACA3C5018475BA3F7DA = {isa = XCConfigurationList; buildConfigurations = (5E55E022FFE48C93491DF32E, 78CDD7BEE7BCE6691F78BA40, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		5BF3B6BB4A3841E0F4BF1BF0 = {isa = XCConfigurationList; buildConfigurations = (430D03C7BF93184906531700, 213D4B8241C36CBE3CEF0309, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		B7ECB349DD6E2DD083B81E0C = {isa = XCConfigurationList; buildConfigurations = (3C162B2FEE077730D428AE29, 46F327E5ECD471E5117BD4E8, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		5BF3B6BB4A3841E0F4BF1BF0 /* Build configuration list for PBXNativeTarget "DreeveWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				430D03C7BF93184906531700 /* Debug */,
+				213D4B8241C36CBE3CEF0309 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AE3DAACA3C5018475BA3F7DA /* Build configuration list for PBXNativeTarget "DreeveWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5E55E022FFE48C93491DF32E /* Debug */,
+				78CDD7BEE7BCE6691F78BA40 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B7ECB349DD6E2DD083B81E0C /* Build configuration list for PBXNativeTarget "DreeveWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3C162B2FEE077730D428AE29 /* Debug */,
+				46F327E5ECD471E5117BD4E8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 	};
 	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
