@@ -6,6 +6,7 @@ import UIKit
 /// The extension receives only active goal definitions and derived totals. The
 /// SwiftData store, API credentials and underlying activity records stay in the app.
 struct GoalWidgetPublisher: View {
+    @EnvironmentObject private var watchBridge: PhoneGoalWatchBridge
     @EnvironmentObject private var progress: GoalProgressStore
     @Query private var goals: [TrainingGoal]
     @Environment(\.modelContext) private var context
@@ -23,9 +24,11 @@ struct GoalWidgetPublisher: View {
                         let fetched = try context.fetch(FetchDescriptor<TrainingGoal>())
                         let confirmed = snapshot(at: timeline.date, goals: fetched)
                         let storage = GoalWidgetStorage()
-                        try storage.prepareForWidgetAccess()
+                        try? storage.prepareForWidgetAccess()
                         let previous = storage.readResult().snapshot
                         let published = confirmed.retainingKnownProgress(from: previous)
+                        // Watch delivery is independent of iPhone App Group availability.
+                        watchBridge.publish(published)
                         guard previous != published else { return }
                         try storage.write(published)
                         for kind in GoalWidgetStorage.kinds { WidgetCenter.shared.reloadTimelines(ofKind: kind) }

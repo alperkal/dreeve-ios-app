@@ -161,7 +161,12 @@ final class GoalProgressStore: ObservableObject {
         do {
             let url = cacheURL(value.instanceID)
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(value).write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+            let data = try JSONEncoder().encode(value)
+            #if os(iOS)
+            try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+            #else
+            try data.write(to: url, options: .atomic)
+            #endif
         } catch { self.error = "Progress is available, but its offline cache could not be saved." }
     }
     func refresh(client: DreeveAPIClient) async {

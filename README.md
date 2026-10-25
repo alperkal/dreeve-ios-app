@@ -324,7 +324,7 @@ The small widget supports **Edit Widget → Goal** to choose any active goal. It
 
 ### Device setup
 
-1. In the project's Build Settings, set `DREEVE_APP_BUNDLE_IDENTIFIER` to your unique app identifier. The widget bundle ID and default group ID derive from it. Both targets must use the same eligible signing team.
+1. In the project's Build Settings, set `DREEVE_APP_BUNDLE_IDENTIFIER` to your unique app identifier. The widget bundle ID and default group ID derive from it. Both iPhone targets must use the same eligible signing team; the Watch targets also require eligible signing when installed.
 2. Register/enable **App Groups** for both **DreeveIOS** and **DreeveWidgets**, using the same `DREEVE_APP_GROUP_IDENTIFIER` (default `group.<app bundle ID>.goals`). The supplied app/extension entitlements and Info.plist files reference this shared setting. Automatic signing can manage profiles when your account has permission. Personal Teams do not support the shared App Group setup needed here; see [Apple's capability matrix](https://developer.apple.com/help/account/reference/supported-capabilities-ios).
 3. Run the app once, connect to Dreeve, create/select goals and refresh progress. Then add a widget from the iOS Home Screen widget gallery. A new install or inaccessible shared container shows an open-app prompt rather than demo progress. CloudKit remains optional and is not required for the widgets.
 4. Release signing must cover both the app and embedded `.appex`, with matching app-group membership. CI builds both automatically through the main shared scheme and validates extension embedding, bundle IDs, version/build numbers and group settings before packaging. Unsigned release assets require your own provisioning/signing for both products.
@@ -358,3 +358,36 @@ When Dreeve is unavailable, automatic prompts wait: workouts remain **Import sta
 Discovery uses a HealthKit observer plus bounded month rescans, including on foreground and every 30 seconds while active. Rescanning the bounded window catches late Watch arrivals and removes deleted Health workouts from pending discovery without relying on workout timestamps as a change cursor. It does not schedule closed-app notifications or background uploads. Apple Health access still requires Apple’s system authorization; denied read access cannot be distinguished from an empty result. Changes to Health never automatically edit/delete activities in Dreeve. Cross-device exactly-once uploads would require server-enforced idempotency.
 
 `HealthDiscoveryContractTest.swift` covers calendar-month and leap-year boundaries, scoped durable approvals and export choices, cancellation/snooze, journal corruption, complete paginated comparisons, remote imports/queue states, local uncertainty, legacy filenames and offline failure. Live HealthKit observation, authorization and Watch arrival timing require real-iPhone verification.
+
+## Apple Watch goals and complications
+
+The companion **Dreeve** Watch app supports watchOS 10+. Add **Goal progress** to an Infograph corner for a curved progress gauge, or to a circular complication position for a ring. Each complication selects its own active goal; its initial choice is your first favorite. A completed goal shows the lime checkmark, and tapping opens that goal’s Watch details. A missing/deleted goal or a goal from a different Dreeve instance is never silently replaced. Complications omit update-time labels and adapt to the watch face’s rendering/color rules.
+
+### Install and select a goal
+
+1. Use a signing team that supports App Groups. Set the same team on **DreeveIOS**, **DreeveWidgets**, **DreeveWatch** and **DreeveWatchWidgets**. The app IDs derive from `DREEVE_APP_BUNDLE_IDENTIFIER`; all targets use `DREEVE_APP_GROUP_IDENTIFIER`. Keep the Watch companion identifier consistent with the iPhone bundle ID. No Watch HealthKit or CloudKit capability is needed.
+2. Build/run the iPhone app and install its embedded Watch companion on the paired Watch (enable automatic app installation or install Dreeve through the iPhone Watch app). Open Dreeve on iPhone, connect and refresh goals, then open Dreeve on Watch to receive them.
+3. Edit a compatible watch face, select a corner or circular position and choose **Dreeve → Goal progress** / the goal-specific recommendation. Choose the desired goal in the complication’s configuration where offered. Repeat for a different position to show another goal. Available positions/layouts depend on the watch face.
+4. **Sync from iPhone** on Watch requests the iPhone’s latest saved snapshot. It does not make an independent Dreeve API request. Open/refresh the iPhone app to fetch new server activities. Health workouts count only after import into Dreeve and the subsequent activity/goal refresh.
+
+### Transfer, offline behavior and privacy
+
+The iPhone publishes the same goal definitions/derived totals used by its widgets through Watch Connectivity. The Watch saves a separate atomic snapshot in its local App Group, shared only with its complication extension; App Groups do not transport files between the two devices. The Watch receives no API token, server address, raw activities or Health samples, and needs no direct access to your private Dreeve network.
+
+Disconnected complications retain the latest received progress within its valid calendar period. At a week/month rollover, old completion marks expire and the Watch asks for an iPhone refresh instead of inventing zero or reusing last period’s progress. Logout, instance changes, archives and deletions propagate in ordered envelopes; stale/duplicate deliveries cannot overwrite a later revision. Changes reach a disconnected Watch when connectivity/system delivery resumes, not immediately at the moment of a phone-side deletion.
+
+Transfers use latest application context, with budget-aware priority updates for changed visible goals when an active complication permits them. Timestamp-only refreshes do not consume that priority budget. Larger goal inventories use an immutable file transfer instead of exceeding the context-message size limit. Snapshots are versioned, size-bounded, protected until first unlock and excluded from backup. Invalid transfers keep the last valid data. Watch background connectivity tasks complete after pending delegate data has been handled. watchOS controls actual transfer and complication refresh timing; there is no guaranteed live update interval.
+
+### Build and validate
+
+The main iPhone scheme builds/embeds both the Watch app and its complication extension for simulator/device. The separate shared scheme can also build Watch products directly:
+
+```sh
+xcodebuild -project DreeveIOS.xcodeproj -scheme DreeveWatch \
+  -sdk watchsimulator -destination 'generic/platform=watchOS Simulator' \
+  -derivedDataPath /tmp/dreeve-watch CODE_SIGNING_ALLOWED=NO build
+```
+
+CI’s existing simulator/iPhone builds include Watch dependencies, and packaging validates the embedded companion, complication, bundle IDs, versions, platforms and App Group identifiers. The simulator ZIP and unsigned IPA contain Watch products as well; device installation requires eligible signing of all four products.
+
+`GoalWatchContractTest.swift` runs in `run_tests.sh` and covers ordered delivery/logout, persistent offline values, instance-scoped selection/deep links, missing goals, completion/rollover, large-payload file fallback, priority-budget decisions and invalid/credential-free payloads. Local simulator SDK and unsigned device builds can verify compilation/embedding without a Watch runtime. Actual Infograph appearance, per-complication selection, paired transfer, background delivery, face tint/Always On, lock/unlock, disconnection/reconnection and phone/Watch reinstall behavior require a signed paired-iPhone/Watch test. This development machine currently has Watch SDKs but no installed Watch simulator runtime; no live watch-face check is claimed.

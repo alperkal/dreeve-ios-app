@@ -2,13 +2,13 @@
 
 Read this before exploring the implementation. This is a repository-owned handoff, not a chat transcript. It explains current behavior and why the boundaries exist, so another agent can start with the relevant files instead of rediscovering the whole app.
 
-Reviewed 2026-10-25 against application code through `934515f`. Sources: the original “Create Dreeve iOS App” conversation, subsequent feature/fix discussions, README, current source, tests and workflows. Historical proposals are superseded by the implemented behavior below. Verify the current checkout before acting; update this document when architecture or product decisions change.
+Reviewed 2026-10-25. Baseline release: `v0.6.0` (`e0c23b2`); the Watch companion additions are documented alongside their implementation. Sources: the original “Create Dreeve iOS App” conversation, subsequent feature/fix discussions, README, current source, tests and workflows. Historical proposals are superseded by the implemented behavior below. Verify the current checkout before acting; update this document when architecture or product decisions change.
 
 ## Purpose and product boundaries
 
 A native, personal iPhone companion for a self-hosted Dreeve activity server: browse activities, view routes/photos, manage gear, import workouts from Apple Health or Files, track recurring goals, see widgets and a local training brief, and create shareable activity cards.
 
-- SwiftUI, iOS 17 minimum, Swift 5 language mode; an Xcode project with an embedded WidgetKit extension. No third-party runtime dependency is currently required. FoundationModels is optional behind availability checks.
+- SwiftUI, iOS 17 minimum, Swift 5 language mode; an Xcode project with an embedded iPhone WidgetKit extension plus a watchOS 10+ companion and complication extension. No third-party runtime dependency is currently required. FoundationModels is optional behind availability checks.
 - Dreeve owns activities and gear. The app adds goal definitions and local derived features; it does not add a backend service or replace Dreeve’s import processor.
 - The public API key is deployment-level access, not a multi-user authentication model. Deployment scoping must not be described as user-account isolation.
 - Dark navy surfaces, lime accent, rounded cards; shared design primitives live in `Theme.swift`. User-facing flows should use plain language.
@@ -39,6 +39,8 @@ A native, personal iPhone companion for a self-hosted Dreeve activity server: br
 | `DreeveIOS/RouteGeometryProjector.swift`, `ShareCardRenderer.swift`, `ShareCardSheetView.swift` | Route projection, native compositing/export, photo/background selection and share/save actions. |
 | `DreeveIOS/GoalWidgetPublisher.swift` | Publishes safe derived snapshots from the main app to the App Group. |
 | `Shared/GoalWidgetData.swift` | Credential-free snapshot types, widget selection/period rules, shared atomic storage; used by both targets. |
+| `Shared/GoalWatchData.swift`, `DreeveIOS/PhoneGoalWatchBridge.swift` | Ordered/versioned credential-free Watch envelopes, atomic storage, scoped selection/deep links and iPhone Watch Connectivity sender. |
+| `DreeveWatch/`, `DreeveWatchWidgets/` | Watch companion/receiver/details and configurable corner/circular complications; no direct Dreeve API or HealthKit access. |
 | `DreeveWidgets/` | WidgetKit views, goal-selection App Intent, timelines and extension configuration. No authenticated networking or SwiftData store here. |
 | `DreeveIOS/KeychainStore.swift`, `SettingsView.swift` | Secure API-token persistence, connection/capability settings and user-configured image-search endpoint. |
 | `DreeveIOSTests/`, `run_tests.sh` | Portable standalone Swift contract executables, not an XCTest target. |
@@ -138,6 +140,16 @@ Snapshot storage is atomic, backup-excluded and protected until first unlock aft
 
 The training brief uses Swift-computed facts from complete cached history. It is fingerprint-cached across opens, invalidated by relevant activity/goal/day changes, and can be force-refreshed. On supported iOS 26+ devices, FoundationModels only curates the order/emphasis of verified categories; Swift controls sentences and numbers. Model unavailability, refusal, failure or timeout falls back to deterministic rules. No hosted AI or secret service key is required. Never send names, routes, coordinates or instance/token data into the model prompt. Workload descriptions are not medical/injury predictions. Coach comparisons keep exact sport and matching indoor/outdoor/route category; virtual merging for goals is not permission to compare indoor vs outdoor performance.
 
+### Watch companion boundary
+
+The iPhone publisher sends the existing safe goal snapshot through `PhoneGoalWatchBridge`; the Watch receives and atomically saves a versioned envelope using `GoalWatchStorage`. iPhone and Watch App Groups are separate device-local containers, not a cross-device file share. Never add API credentials or duplicate goal calculation to Watch code. The Watch app and extension use only `GoalWidgetData`/`GoalWatchData`, not the iOS SwiftData models or API client.
+
+Each complication’s App Intent selection contains both instance and goal identity. The default is the first favorite; explicit missing selections never fall back. Corner uses the system curved widget-label gauge; circular uses a ring; completion is a lime check. Taps deep-link to that exact goal’s Watch detail. Saved amounts persist offline only for their valid week/month; rollover is unknown until a fresh phone snapshot arrives. No update-time labels. **Sync from iPhone** requests cached phone state, not a Dreeve server refresh.
+
+Application context carries the latest small snapshot; large inventories use immutable file transfers. Sequence numbers reject delayed duplicate/out-of-order packets; sender IDs/timestamps distinguish phone reinstall generations. Phone-side logout/instance changes explicitly publish an ordered empty snapshot. Priority complication transfers are budgeted and reserved for visible goal changes, not timestamps alone. Watch background tasks must wait for session activation/pending data handling; do not complete them before persisting incoming data. Actual Watch delivery timing is system-managed, and a disconnected Watch cannot learn a logout instantly.
+
+The main scheme embeds Watch app + Watch complication extension; `DreeveWatch.xcscheme` supports watch-only builds. All four targets need consistent signing/App Groups; no Watch CloudKit/HealthKit capability is used. `scripts/package_build.py` checks Watch embedding/identifiers/versions/platforms as well as iPhone widgets. The Watch simulator runtime is not installed on this development host: SDK builds and portable transport tests do not prove actual Infograph rendering or paired-device/background delivery. See the README’s signed-device checklist before claiming end-to-end validation.
+
 ## Build, verification, release and maintenance
 
 From the repository root on macOS:
@@ -161,7 +173,7 @@ Change-to-test routing:
 | Overview sport drill-down | `OverviewSportsContractTest.swift` |
 | Health/FIT/re-import/discovery | `HealthSyncContractTest.swift`, `HealthDiscoveryContractTest.swift` |
 | Gear search/cache/state machine | `GearFeatureContractTest.swift` |
-| Widget snapshot/rollover/offline | `GoalWidgetContractTest.swift` |
+| Widget/Watch snapshot, selection, rollover/offline | `GoalWidgetContractTest.swift`, `GoalWatchContractTest.swift` |
 | Photo URLs/auth/error handling | `ActivityPhotoContractTest.swift` |
 | Geometry/share export | `ShareCardContractTest.swift` |
 | Training brief/privacy/fallback | `CoachContractTest.swift` |
@@ -176,9 +188,11 @@ Widgets require matching App Groups in app + extension. IDs derive from `DREEVE_
 
 - `.github/workflows/build.yml`: main pushes, PRs, manual dispatch and reusable workflow; macOS runner calls `scripts/ci_build.sh`.
 - `.github/workflows/release.yml`: a **pushed `v*` tag**, not an ordinary commit, triggers verification/build then GitHub release publication. The build script requires semver-like tags (`v0.4.0`, optional prerelease suffix). Do not create/push a release tag without user authorization.
-- `scripts/package_build.py`: source ZIP from **tracked committed content**, simulator ZIP, unsigned iPhone IPA and checksums. Uncommitted edits are not in the source archive. The IPA needs signing; it is not directly installable or TestFlight/App Store distribution. Both app and extension must be signed/embedded correctly.
+- `scripts/package_build.py`: source ZIP from **tracked committed content**, simulator ZIP, unsigned iPhone IPA and checksums. Uncommitted edits are not in the source archive. The IPA needs signing; it is not directly installable or TestFlight/App Store distribution. All four app/extension products must be signed/embedded correctly.
 - CI uses no Apple credentials and does not prove live HealthKit/CloudKit/Home Screen integration. Keep hosted-run results distinct from local results.
 
 Prior work has passed standalone suites and simulator builds; some features also received unsigned device builds and isolated synthetic simulator checks. These are historical results, not guarantees for a new change. Real-iPhone Health authorization/Watch arrivals/sensor availability, actual Dreeve processing, signed CloudKit/App Group access, widget lock/unlock/timelines and receiving-app sharing need device/live checks. No real Health data or live server mutations are necessary for portable tests. Known unreachable-CloudKit-branch compiler warnings in local simulator configurations are separate from runtime failures.
 
 For any change: inspect current Git status, read this guide and only the relevant implementation/tests, preserve existing work, validate proportionately, and report exactly what was checked. The original working checkout is `~/Documents/workspace/dreeve-ios-app`; when the repository is relocated, work in the actual supplied checkout rather than creating the historical path. Never edit an extracted starter ZIP or synced ChatGPT reference mirror instead of the working repo. Commit only when requested; pushing and releasing are separate actions. Update this document and README when behavior changes, and keep `AGENTS.md` as the short entry point.
+
+Portable-cache note: iOS file-protection write options are guarded by platform in goal/gear caches. On macOS, portable tests use atomic writes without iOS protection flags; otherwise the OS may deny reopening fixtures. Device data protection remains enabled.

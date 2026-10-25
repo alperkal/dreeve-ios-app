@@ -98,7 +98,7 @@ struct GoalWidgetStorage {
     let directory: URL?
     init(directory: URL? = Self.sharedDirectory()) { self.directory = directory }
     static func sharedDirectory() -> URL? {
-        #if os(iOS)
+        #if os(iOS) || os(watchOS)
         guard let group = Bundle.main.object(forInfoDictionaryKey: "DreeveAppGroup") as? String, !group.isEmpty else { return nil }
         return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)
         #else
@@ -121,7 +121,7 @@ struct GoalWidgetStorage {
     func read() -> GoalWidgetSnapshot { readResult().snapshot ?? .empty }
 
     func prepareForWidgetAccess() throws {
-        #if os(iOS)
+        #if os(iOS) || os(watchOS)
         guard let url, FileManager.default.fileExists(atPath: url.path) else { return }
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         if attributes[.protectionKey] as? FileProtectionType != .completeUntilFirstUserAuthentication {
@@ -133,7 +133,7 @@ struct GoalWidgetStorage {
         guard let url else { throw CocoaError(.fileNoSuchFile) }
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(snapshot)
-        #if os(iOS)
+        #if os(iOS) || os(watchOS)
         // Encrypted at rest; readable after the first unlock following a restart,
         // including later locks when WidgetKit starts a new extension process.
         try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])

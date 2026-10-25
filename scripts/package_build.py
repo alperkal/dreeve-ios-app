@@ -36,11 +36,35 @@ def validate_widget(app, parent, platform):
         raise ValueError("Expected an unsigned widget extension")
 
 
+def validate_watch(app, parent, device):
+    watch = app / "Watch" / "DreeveWatch.app"
+    platform = "WatchOS" if device else "WatchSimulator"
+    info = app_info(watch, platform)
+    if not info.get("WKApplication") or info.get("WKCompanionAppBundleIdentifier") != parent["CFBundleIdentifier"]:
+        raise ValueError("Watch app must identify its iPhone companion")
+    if info["CFBundleIdentifier"] != parent["CFBundleIdentifier"] + ".watchkitapp":
+        raise ValueError("Watch bundle ID must derive from the iPhone app")
+    complication = watch / "PlugIns" / "DreeveWatchWidgets.appex"
+    widget = app_info(complication, platform)
+    if widget.get("NSExtension", {}).get("NSExtensionPointIdentifier") != "com.apple.widgetkit-extension":
+        raise ValueError("Watch app must embed its WidgetKit complications")
+    if widget["CFBundleIdentifier"] != info["CFBundleIdentifier"] + ".GoalsWidget":
+        raise ValueError("Watch complication ID must derive from its app")
+    for bundle, values in [(watch, info), (complication, widget)]:
+        for key in ("CFBundleShortVersionString", "CFBundleVersion", "DreeveAppGroup"):
+            if not values.get(key) or values[key] != parent.get(key):
+                raise ValueError(f"Watch and iPhone products disagree on {key}")
+        if device and ((bundle / "_CodeSignature").exists() or (bundle / "embedded.mobileprovision").exists()):
+            raise ValueError("Expected unsigned Watch products")
+
+
 def package(simulator, iphone, output):
     simulator_info = app_info(simulator, "iPhoneSimulator")
     iphone_info = app_info(iphone, "iPhoneOS")
     validate_widget(simulator, simulator_info, "iPhoneSimulator")
     validate_widget(iphone, iphone_info, "iPhoneOS")
+    validate_watch(simulator, simulator_info, False)
+    validate_watch(iphone, iphone_info, True)
     for key in ("CFBundleIdentifier", "CFBundleShortVersionString", "CFBundleVersion"):
         if simulator_info[key] != iphone_info[key]:
             raise ValueError(f"Simulator and iPhone products disagree on {key}")

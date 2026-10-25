@@ -5,6 +5,7 @@ import WidgetKit
 
 @main
 struct DreeveApp: App {
+    @StateObject private var watchBridge = PhoneGoalWatchBridge()
     @StateObject private var goals = GoalPersistence()
     @StateObject private var session = DreeveSession()
     @StateObject private var healthSync = HealthSyncStore()
@@ -20,7 +21,9 @@ struct DreeveApp: App {
                     RootView()
                 }
             }
+                .environmentObject(watchBridge)
                 .environmentObject(goals)
+                .task { watchBridge.start() }
                 .environmentObject(session.goalProgress)
                 .environmentObject(session)
                 .environmentObject(healthSync)
@@ -29,6 +32,7 @@ struct DreeveApp: App {
                     // Only an explicit connection change/logout clears the old scope.
                     // Initial unavailable storage or credentials must not clear it.
                     guard old != new else { return }
+                    watchBridge.selectInstance((try? DreeveAPIClient.validatedURL(new)).map(GoalEngine.instanceID))
                     do {
                         let storage = GoalWidgetStorage()
                         if let url = try? DreeveAPIClient.validatedURL(new),
@@ -47,6 +51,7 @@ struct RootView: View {
     @EnvironmentObject private var persistence: GoalPersistence
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab = 0
+    @EnvironmentObject private var watchBridge: PhoneGoalWatchBridge
     @EnvironmentObject private var healthSync: HealthSyncStore
     @EnvironmentObject private var healthDiscovery: HealthImportDiscovery
     @AppStorage("health.discovery.enabled") private var discoverWorkouts = true
@@ -124,6 +129,7 @@ struct RootView: View {
         .background(DreeveTheme.background)
         .task(id: "\(session.serverAddress)|\(scenePhase == .active)") {
             guard scenePhase == .active, session.isConfigured else { return }
+            watchBridge.start()
             await session.refreshGoals()
             await persistence.checkAccount()
             _ = try? await session.testConnection()

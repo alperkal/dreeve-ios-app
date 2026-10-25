@@ -43,9 +43,9 @@ jobs:
         run: |
           set -euo pipefail
           cat > release-notes.md <<'NOTES'
-          Includes the Xcode source project, an iOS Simulator app, an unsigned iPhone IPA, and SHA-256 checksums.
+          Includes the Xcode source project, an iOS Simulator app, an unsigned iPhone IPA, and SHA-256 checksums. The app packages include the Watch companion and goal complications.
 
-          The IPA must be signed with your own Apple development identity before installation. It is not an App Store or TestFlight build. The default app stores goals locally and does not require iCloud or Push Notifications capabilities.
+          The iPhone app, Watch companion, and both widget extensions must be signed with your own eligible Apple development identity and matching App Group membership before installation. It is not an App Store or TestFlight build. The default app stores goals locally and does not require iCloud or Push Notifications capabilities.
           NOTES
           flags=()
           if [[ "$RELEASE_TAG" == *-* ]]; then

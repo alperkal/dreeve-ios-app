@@ -173,6 +173,10 @@ struct GearImageCache {
         try? root.setResourceValues(values)
         // Exactly one file per gear/instance. Atomic replacement removes the previous image
         // only after the new image is ready; no result-history files accumulate.
+        #if os(iOS)
         try data.write(to: fileURL(instanceID: instanceID, gearID: gearID), options: [.atomic, .completeFileProtectionUnlessOpen])
+        #else
+        try data.write(to: fileURL(instanceID: instanceID, gearID: gearID), options: .atomic)
+        #endif
     }
 }
