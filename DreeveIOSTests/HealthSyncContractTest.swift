@@ -211,6 +211,63 @@ struct HealthSyncContractTest {
         """.utf8)).activities
         precondition(HealthWorkoutMatcher.candidates(for:workout,activities:activities).map(\.id) == ["activity-1"])
 
+        // Import feed uses durable intents, exact remote IDs and local-only previews.
+        let preview = HealthImportPreview(samples: [
+            HealthTrackpoint(date: start.addingTimeInterval(30), latitude: 48.21, longitude: 16.31),
+            HealthTrackpoint(date: start, latitude: 48.20, longitude: 16.30),
+            HealthTrackpoint(date: start, heartRate: 150),
+            HealthTrackpoint(date: start, latitude: .nan, longitude: 16),
+            HealthTrackpoint(date: start, latitude: 91, longitude: 16)
+        ])
+        precondition(preview.route == [[48.20, 16.30], [48.21, 16.31]])
+        let longPreview = HealthImportPreview(samples: (0..<5000).map {
+            HealthTrackpoint(date: start.addingTimeInterval(Double($0)), latitude: 48 + Double($0) / 100000, longitude: 16)
+        })
+        precondition(longPreview.route.count == 2000 && longPreview.route.first == [48, 16] && longPreview.route.last == [48.04999, 16])
+        precondition(HealthImportPreview(samples: []).route.isEmpty)
+        var queueRow = HealthSyncRecord(server: "https://one.test", workout: workout, state: .queued,
+            uploadFilename: workout.filename, preview: preview)
+        try ledger.save(queueRow)
+        let previewReload = try HealthSyncLedger(url: path)
+        precondition(previewReload.records.first { $0.id == queueRow.id }!.preview!.route == preview.route)
+        let noPreviewJSON = try JSONEncoder().encode(pending)
+        let withoutPreview = try JSONDecoder().decode(HealthSyncRecord.self, from: noPreviewJSON)
+        precondition(withoutPreview.preview == nil)
+        precondition(queueRow.feedActivity.calories == 300 && queueRow.feedActivity.distanceInMeter == 5000)
+        precondition(queueRow.feedActivity.startDateLocal == "2026-10-12T10:00:00") // workout timezone, not UTC
+        precondition(queueRow.feedActivity.startLatLng == preview.route.first)
+        let queuedFeed = HealthActivityFeed.entries(activities: activities, records: [queueRow, queueRow, secondServer], server: "https://one.test")
+        precondition(queuedFeed.count == 3 && queuedFeed[0].summary.id == "activity-2")
+        precondition(queuedFeed.filter { $0.id == "health-import|" + queueRow.id }.count == 1)
+        // A nearby activity is only a heuristic candidate, never permission to hide a pending import.
+        precondition(queuedFeed.contains { $0.id == "health-import|" + queueRow.id })
+        precondition(HealthActivityFeed.entries(activities: [], records: [queueRow], server: "https://other.test").isEmpty)
+        queueRow.state = .uncertain
+        precondition(queueRow.appearsInImportFeed && queueRow.feedStatus == "Upload unconfirmed")
+        queueRow.state = .needsDetails; queueRow.activityID = "activity-1"
+        let confirmedFeed = HealthActivityFeed.entries(activities: activities, records: [queueRow], server: queueRow.server)
+        precondition(confirmedFeed.count == 2 && confirmedFeed.allSatisfy { !$0.id.hasPrefix("health-import|") })
+        precondition(HealthActivityFeed.entries(activities: [], records: [queueRow], server: queueRow.server,
+            knownActivities: activities).isEmpty)
+        queueRow.state = .failed
+        precondition(queueRow.appearsInImportFeed && queueRow.feedStatus == "Import failed")
+        var legacyFailure = queueRow; legacyFailure.preview = nil
+        precondition(!legacyFailure.appearsInImportFeed) // don't suddenly surface old failed history
+        for finished in [HealthSyncState.imported, .skipped, .deleted] {
+            queueRow.state = finished
+            precondition(!queueRow.appearsInImportFeed)
+        }
+
+        queueRow.state = .imported; queueRow.feedHandoffPending = true
+        precondition(queueRow.awaitingFeedHandoff && queueRow.appearsInImportFeed)
+        precondition(HealthActivityFeed.entries(activities: [], records: [queueRow], server: queueRow.server).count == 1)
+        precondition(HealthActivityFeed.entries(activities: activities, records: [queueRow], server: queueRow.server).count == 2)
+        try ledger.save(queueRow)
+        let handoffAfterRelaunch = try HealthSyncLedger(url: path).records.first { $0.id == queueRow.id }!
+        precondition(handoffAfterRelaunch.awaitingFeedHandoff)
+        queueRow.feedHandoffPending = false
+        precondition(!queueRow.appearsInImportFeed)
+
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [HealthMockURLProtocol.self]
         let client = DreeveAPIClient(baseURL:URL(string:"https://example.test/subpath")!,token:"test-token",urlSession:URLSession(configuration:config))
@@ -330,6 +387,6 @@ struct HealthSyncContractTest {
         let receipt = try await client.uploadActivity(data:emptyRoute,filename:workout.filename)
         precondition(receipt.status == "queued")
         try emptyRoute.write(to:URL(fileURLWithPath:"/private/tmp/dreeve-health-synthetic.fit"))
-        print("Health sync contract tests passed: FIT CRC/profile, cadence/power records and summaries, step-rate conversion, condensed intervals/duplicates/gaps/zeros/pauses, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history, duplicate candidates, confirmed deletion/re-import recovery, pending/offline protection, import filters and binary multipart upload.")
+        print("Health sync contract tests passed: FIT CRC/profile, cadence/power records and summaries, step-rate conversion, condensed intervals/duplicates/gaps/zeros/pauses, precision/speed/heart rate/pauses, indoor summaries, active/elapsed duration, legacy TCX journal migration, durable history and queued feed previews/order/scoping/exact-ID handoff, duplicate candidates, confirmed deletion/re-import recovery, pending/offline protection, import filters and binary multipart upload.")
     }
 }

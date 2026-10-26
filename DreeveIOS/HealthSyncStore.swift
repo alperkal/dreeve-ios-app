@@ -111,6 +111,38 @@ final class HealthSyncStore: ObservableObject {
         } catch { if !(error is CancellationError), !Task.isCancelled { errorMessage = error.localizedDescription } }
     }
 
+    /// Foreground polling also runs outside Health Sync, including after relaunch.
+    /// This only checks durable intents; it never uploads or automatically retries.
+    func refreshQueuedImports(session: DreeveSession) async {
+        let server = session.serverAddress
+        let pending = Set(records.filter { $0.server == server && ([.queued, .uncertain, .needsDetails].contains($0.state) || $0.awaitingFeedHandoff) }.map(\.id))
+        guard !isBusy, !pending.isEmpty else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let client = try session.configuredClient()
+            try await reconcile(client: client, server: server, pendingOnly: true)
+            try ensureServer(session, server: server)
+        } catch {
+            // Keep saved queue rows intact while offline; existing Health Sync
+            // refresh exposes request errors when the person explicitly requests it.
+        }
+        // Even a partial reconciliation may have completed one of several imports.
+        guard session.serverAddress == server, !Task.isCancelled else { return }
+        if records.contains(where: { pending.contains($0.id) && [.imported, .skipped].contains($0.state) }) {
+            await session.reloadActivities()
+            await session.refreshGoals(forceFullReconcile: true)
+            guard session.serverAddress == server else { return }
+            let known = Set((session.activities + session.insightsActivities).map(\.id))
+            for var record in records where record.server == server && record.awaitingFeedHandoff {
+                if let id = record.activityID, known.contains(id) {
+                    record.feedHandoffPending = false
+                    try? save(record)
+                }
+            }
+        }
+    }
+
     func sync(ids: Set<UUID>, session: DreeveSession, routes: Bool, heartRate: Bool, continueWhile: () -> Bool = { true }) async {
         guard !isBusy, isReady, loadedServer == session.serverAddress else { return }
         let selected = workouts.filter { ids.contains($0.id) && canSelect($0, server: session.serverAddress) }
@@ -141,16 +173,16 @@ final class HealthSyncStore: ObservableObject {
                     candidates[workout.id] = matches
                     continue
                 }
-                let data = try await reader.export(workout, routes: routes, heartRate: heartRate)
+                let exported = try await reader.export(workout, routes: routes, heartRate: heartRate)
                 try ensureServer(session, server: server)
                 try Task.checkCancellation()
                 guard continueWhile() else { throw CancellationError() }
                 var pending = HealthSyncRecord(server: server, workout: workout, state: .uncertain,
-                    message: "Refresh status to confirm whether Dreeve accepted the file. No automatic retry will be made.", uploadFilename: workout.filename)
+                    message: "Refresh status to confirm whether Dreeve accepted the file. No automatic retry will be made.", uploadFilename: workout.filename, preview: exported.preview, feedHandoffPending: true)
                 // Persist intent BEFORE the request. A crash or timeout must not cause a blind reupload.
                 try save(pending)
                 do {
-                    let receipt = try await client.uploadActivity(data: data, filename: workout.filename)
+                    let receipt = try await client.uploadActivity(data: exported.data, filename: workout.filename)
                     guard receipt.status == "queued" else { throw APIError.unexpectedResponse }
                     session.notePendingImport(filename: workout.filename)
                     pending.state = .queued
@@ -218,11 +250,11 @@ final class HealthSyncStore: ObservableObject {
         try await HealthImportHistory.find(client: client, filenames: [filename])
     }
 
-    private func reconcile(client: DreeveAPIClient, server: String) async throws {
+    private func reconcile(client: DreeveAPIClient, server: String, pendingOnly: Bool = false) async throws {
         let visibleIDs = Set(workouts.map(\.id))
-        for record in records where record.server == server {
+        for record in records where record.server == server && (!pendingOnly || [.queued, .uncertain, .needsDetails].contains(record.state) || record.awaitingFeedHandoff) {
             try Task.checkCancellation()
-            if [.imported, .skipped].contains(record.state), visibleIDs.contains(record.workout.id) {
+            if [.imported, .skipped].contains(record.state), visibleIDs.contains(record.workout.id) || record.awaitingFeedHandoff {
                 let verified = try await HealthSyncRecovery.verify(record, client: client)
                 if verified.state == .deleted {
                     try save(verified)
@@ -244,7 +276,9 @@ final class HealthSyncStore: ObservableObject {
         case "skipped": .skipped
         default: .queued
         }
-        let record = HealthSyncRecord(server: server, workout: workout, state: state, activityID: item.activityId, message: item.errorMessage, uploadFilename: item.filename)
+        let record = HealthSyncRecord(server: server, workout: workout, state: state, activityID: item.activityId, message: item.errorMessage, uploadFilename: item.filename,
+            preview: record(workout.id, server: server)?.preview,
+            feedHandoffPending: record(workout.id, server: server)?.feedHandoffPending)
         try save(record)
         if state == .needsDetails, let id = item.activityId { try await finish(record, id: id, client: client) }
     }

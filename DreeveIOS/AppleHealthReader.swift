@@ -62,7 +62,7 @@ final class AppleHealthReader {
         }
     }
 
-    func export(_ summary: HealthWorkoutSummary, routes: Bool, heartRate: Bool) async throws -> Data {
+    func export(_ summary: HealthWorkoutSummary, routes: Bool, heartRate: Bool) async throws -> HealthWorkoutExport {
         guard let workout = workouts[summary.id] else { throw HealthSyncError.invalidWorkout }
         var points: [HealthTrackpoint] = []
         if routes {
@@ -114,7 +114,8 @@ final class AppleHealthReader {
         for (date, value) in HealthMetricTimeline.seconds(power, workout: summary, events: events, upperBound: 65535) {
             points.append(HealthTrackpoint(date: max(date, summary.start), power: value))
         }
-        return try HealthFITExporter.data(workout: summary, samples: points, events: events)
+        return try HealthWorkoutExport(data: HealthFITExporter.data(workout: summary, samples: points, events: events),
+            preview: HealthImportPreview(samples: points))
     }
 
     private func metricSamples(_ identifier: HKQuantityTypeIdentifier, unit: HKUnit, workout: HKWorkout) async throws -> [HealthMetricSample] {

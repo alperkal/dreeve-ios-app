@@ -3,8 +3,13 @@ import SwiftUI
 
 struct RouteMapView: View {
     let activity: DreeveActivity
+    var localRoute: [[Double]] = []
 
     private var route: [CLLocationCoordinate2D] {
+        if !localRoute.isEmpty {
+            return localRoute.filter { $0.count == 2 && $0[0].isFinite && $0[1].isFinite && abs($0[0]) <= 90 && abs($0[1]) <= 180 }
+                .map { CLLocationCoordinate2D(latitude: $0[0], longitude: $0[1]) }
+        }
         guard let encoded = activity.encodedPolyline, !encoded.isEmpty else { return [] }
         return PolylineDecoder.decode(encoded)
     }

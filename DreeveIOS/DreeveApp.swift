@@ -97,6 +97,13 @@ struct RootView: View {
         .onReceive(healthSync.$records) { records in
             healthDiscovery.noteRecords(records, server: session.serverAddress)
         }
+        .task(id: "importQueue|\(session.serverAddress)|\(scenePhase == .active)") {
+            guard scenePhase == .active, session.isConfigured else { return }
+            while !Task.isCancelled {
+                await healthSync.refreshQueuedImports(session: session)
+                do { try await Task.sleep(for: .seconds(10)) } catch { break }
+            }
+        }
         .task(id: "health|\(session.serverAddress)|\(scenePhase == .active)|\(discoverWorkouts)") {
             guard scenePhase == .active, session.isConfigured, discoverWorkouts else {
                 healthDiscovery.stop()

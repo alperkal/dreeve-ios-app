@@ -112,8 +112,101 @@ struct HealthSyncRecord: Codable, Identifiable {
     // Old journal entries omitted this field and used TCX. Keep their exact import
     // filename during reconciliation; new uploads explicitly record the FIT name.
     var uploadFilename: String? = nil
+    var preview: HealthImportPreview? = nil
+    var feedHandoffPending: Bool? = nil
     var filename: String { uploadFilename ?? workout.legacyFilename }
     var id: String { server + "|" + workout.id.uuidString }
+}
+
+/// A compact local-only route, captured from the already-authorized FIT export.
+/// Stored in the protected import journal, never the activity index or CloudKit.
+struct HealthImportPreview: Codable {
+    let route: [[Double]]
+    init(samples: [HealthTrackpoint]) {
+        let coordinates = samples.sorted { $0.date < $1.date }.compactMap { sample -> [Double]? in
+            guard let lat = sample.latitude, let lon = sample.longitude,
+                  lat.isFinite, lon.isFinite, abs(lat) <= 90, abs(lon) <= 180 else { return nil }
+            return [lat, lon]
+        }
+        // Bound journal size while preserving both endpoints of long recordings.
+        if coordinates.count <= 2000 { route = coordinates }
+        else {
+            route = (0..<2000).map { coordinates[$0 * (coordinates.count - 1) / 1999] }
+        }
+    }
+}
+
+struct HealthWorkoutExport {
+    let data: Data
+    let preview: HealthImportPreview
+}
+
+enum HealthActivityFeedEntry: Identifiable {
+    case activity(DreeveActivity)
+    case importing(HealthSyncRecord)
+    var id: String {
+        switch self {
+        case .activity(let activity): return activity.id
+        case .importing(let record): return "health-import|" + record.id
+        }
+    }
+    var summary: DreeveActivity {
+        switch self {
+        case .activity(let activity): return activity
+        case .importing(let record): return record.feedActivity
+        }
+    }
+}
+
+extension HealthSyncRecord {
+    var awaitingFeedHandoff: Bool {
+        feedHandoffPending == true && [.imported, .skipped].contains(state)
+    }
+    var appearsInImportFeed: Bool {
+        [.queued, .uncertain, .needsDetails].contains(state) || (state == .failed && preview != nil) || awaitingFeedHandoff
+    }
+    var feedStatus: String {
+        switch state {
+        case .queued: return "Import queue"
+        case .uncertain: return "Upload unconfirmed"
+        case .failed: return "Import failed"
+        case .needsDetails: return "Finishing import"
+        case .imported, .skipped: return "Imported · loading activity"
+        default: return state.label
+        }
+    }
+    /// A display-only summary. Never insert this into the server replica or goals.
+    var feedActivity: DreeveActivity {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: workout.timeZoneIdentifier) ?? .current
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return DreeveActivity(id: "health-import|" + id, name: workout.sportType + " · Apple Health", description: nil,
+            sportType: workout.sportType, startDateLocal: formatter.string(from: workout.start),
+            distanceInMeter: workout.distance, elevationInMeter: nil, movingTimeInSeconds: Int(workout.duration),
+            elapsedTimeInSeconds: Int(workout.end.timeIntervalSince(workout.start)), averageSpeedInKmPerHour: nil,
+            maxSpeedInKmPerHour: nil, calories: workout.calories.map { Int($0.rounded()) }, averageHeartRate: nil,
+            maxHeartRate: nil, averagePower: nil, averageCadence: nil, gearId: nil, location: nil,
+            startLatLng: preview?.route.first, encodedPolyline: nil, hasGpx: nil, images: nil)
+    }
+}
+
+enum HealthActivityFeed {
+    static func entries(activities: [DreeveActivity], records: [HealthSyncRecord], server: String,
+                        knownActivities: [DreeveActivity] = []) -> [HealthActivityFeedEntry] {
+        let knownIDs = Set((activities + knownActivities).map(\.id))
+        var seen = Set<String>()
+        let pending = records.filter { record in
+            record.server == server && record.appearsInImportFeed &&
+                (record.activityID.map { !knownIDs.contains($0) } ?? true)
+        }.map(HealthActivityFeedEntry.importing)
+        return (activities.map(HealthActivityFeedEntry.activity) + pending)
+            .filter { seen.insert($0.id).inserted }
+            .sorted { lhs, rhs in
+                lhs.summary.startDateLocal == rhs.summary.startDateLocal ? lhs.id < rhs.id :
+                    lhs.summary.startDateLocal > rhs.summary.startDateLocal
+            }
+    }
 }
 
 final class HealthSyncLedger {

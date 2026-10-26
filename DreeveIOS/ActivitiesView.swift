@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ActivitiesView: View {
     @EnvironmentObject private var session: DreeveSession
+    @EnvironmentObject private var healthSync: HealthSyncStore
     @State private var gearActivities: [DreeveActivity] = []
     @State private var gearActivityError: String?
     @State private var cachedGearKey = ""
@@ -39,13 +40,17 @@ struct ActivitiesView: View {
     private var isLoading: Bool {
         sportFilter != nil ? loadingSport : (selectedGearID == nil ? session.isLoadingActivities : session.isSyncingActivityIndex)
     }
-    private var visibleActivities: [DreeveActivity] {
-        guard !search.isEmpty else { return source }
-        return source.filter { activity in
-            activity.name.localizedCaseInsensitiveContains(search) ||
-            activity.sportType.localizedCaseInsensitiveContains(search) ||
-            activity.locationLabel.localizedCaseInsensitiveContains(search) ||
-            (gearChoices.first { $0.id == activity.gearId }?.name.localizedCaseInsensitiveContains(search) ?? false)
+    private var visibleFeed: [HealthActivityFeedEntry] {
+        let entries = HealthActivityFeed.entries(activities: source,
+            records: selectedGearID == nil ? healthSync.records : [], server: session.serverAddress,
+            knownActivities: session.activities + session.insightsActivities)
+        return entries.filter { entry in
+            let activity = entry.summary
+            if let sportFilter, !sportFilter.matches(activity) { return false }
+            return search.isEmpty || activity.name.localizedCaseInsensitiveContains(search) ||
+                activity.sportType.localizedCaseInsensitiveContains(search) ||
+                activity.locationLabel.localizedCaseInsensitiveContains(search) ||
+                (gearChoices.first { $0.id == activity.gearId }?.name.localizedCaseInsensitiveContains(search) ?? false)
         }
     }
     var body: some View {
@@ -83,13 +88,31 @@ struct ActivitiesView: View {
             }
             Section {
                 if sportFilter == nil && selectedGearID != nil && session.showsActivityIndexStatus { ActivityIndexStatusView() }
-                if source.isEmpty && !isLoading {
+                if visibleFeed.isEmpty && !isLoading {
                     EmptyMessage(title: "No activities", message: sportFilter != nil ? "No matching activities in this period." : (selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear."), symbol: "figure.run")
                         .listRowBackground(Color.clear)
                 }
-                ForEach(visibleActivities) { activity in
-                    NavigationLink { ActivityDetailView(activityID: activity.id) } label: { ActivityRow(activity: activity) }
-                        .listRowBackground(DreeveTheme.surface)
+                ForEach(visibleFeed) { entry in
+                    switch entry {
+                    case .activity(let activity):
+                        NavigationLink { ActivityDetailView(activityID: activity.id) } label: { ActivityRow(activity: activity) }
+                            .listRowBackground(DreeveTheme.surface)
+                    case .importing(let record):
+                        NavigationLink { ImportQueueDetailView(recordID: record.id) } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                ActivityRow(activity: record.feedActivity)
+                                HStack {
+                                    Label(record.feedStatus, systemImage: record.state == .failed ? "exclamationmark.circle" : "clock.arrow.circlepath")
+                                        .foregroundStyle(record.state == .failed ? Color.orange : DreeveTheme.accent)
+                                    Spacer()
+                                    if let calories = record.workout.calories {
+                                        Label("\(Int(calories.rounded())) kcal", systemImage: "flame")
+                                            .foregroundStyle(DreeveTheme.muted)
+                                    }
+                                }.font(.caption.weight(.medium))
+                            }.padding(.bottom, 7)
+                        }.listRowBackground(DreeveTheme.surface)
+                    }
                 }
                 if sportFilter == nil && selectedGearID == nil && session.hasMore {
                     Button { Task { await session.loadMoreActivities() } } label: {
@@ -164,6 +187,7 @@ struct ActivitiesView: View {
         }
     }
     private func reload(forceFullReconcile: Bool = true) async {
+        await healthSync.refreshQueuedImports(session: session)
         if let sportFilter {
             let server = session.serverAddress
             let requestID = UUID()
@@ -240,6 +264,85 @@ struct ActivityIndexStatusView: View {
             } else if let last = session.lastActivitySync, Date.now.timeIntervalSince(last) > 300 {
                 Text("Showing saved activities. Pull to refresh.").font(.caption).foregroundStyle(.secondary)
             }
+        }
+    }
+}
+
+/// Local-only, read-only details until a confirmed server activity exists.
+struct ImportQueueDetailView: View {
+    @EnvironmentObject private var session: DreeveSession
+    @EnvironmentObject private var healthSync: HealthSyncStore
+    let recordID: String
+    private var record: HealthSyncRecord? {
+        healthSync.records.first { $0.id == recordID && $0.server == session.serverAddress }
+    }
+    var body: some View {
+        Group {
+            if let record, let id = record.activityID, [.imported, .skipped].contains(record.state),
+               !record.awaitingFeedHandoff || (session.activities + session.insightsActivities).contains(where: { $0.id == id }) {
+                ActivityDetailView(activityID: id)
+            } else if let record {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text(record.workout.sportType + " · Apple Health").font(.largeTitle.bold())
+                        Text(record.workout.start.formatted(date: .complete, time: .shortened))
+                            .font(.subheadline).foregroundStyle(DreeveTheme.muted)
+                        SurfaceCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label(record.feedStatus, systemImage: record.state == .failed ? "exclamationmark.circle" : "clock.arrow.circlepath")
+                                    .font(.headline).foregroundStyle(DreeveTheme.accent)
+                                Text(statusMessage(record)).font(.subheadline)
+                                if [.uncertain, .failed].contains(record.state), let message = record.message {
+                                    Text(message).font(.caption).foregroundStyle(DreeveTheme.muted)
+                                }
+                            }
+                        }
+                        RouteMapView(activity: record.feedActivity, localRoute: record.preview?.route ?? [])
+                        if record.preview?.route.isEmpty != false {
+                            Text("No saved route preview. Indoor workouts and workouts imported without route access may have no map.")
+                                .font(.caption).foregroundStyle(DreeveTheme.muted)
+                        }
+                        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 12) {
+                            if let distance = record.workout.distance {
+                                MetricView(title: "Distance", value: "\((distance / 1000).oneDecimal) km", symbol: "point.topleft.down.curvedto.point.bottomright.up")
+                            }
+                            MetricView(title: "Moving", value: "\(Int(record.workout.duration / 60)) min", symbol: "clock")
+                            if let calories = record.workout.calories {
+                                MetricView(title: "Calories", value: "\(Int(calories.rounded())) kcal", symbol: "flame")
+                            }
+                        }
+                        Text("Recorded by " + record.workout.source).font(.caption).foregroundStyle(DreeveTheme.muted)
+                        HStack {
+                            Button("Edit activity", systemImage: "pencil") {}.disabled(true)
+                            Button("Add photo", systemImage: "photo.badge.plus") {}.disabled(true)
+                        }.buttonStyle(.bordered)
+                        Text("Editing, gear and photos become available when Dreeve finishes importing. Queued workouts do not count toward goals yet.")
+                            .font(.caption).foregroundStyle(DreeveTheme.muted)
+                    }.padding(20)
+                }
+                .dreeveBackground()
+                .navigationTitle("Import queue")
+                .navigationBarTitleDisplayMode(.inline)
+                .refreshable { await healthSync.refreshQueuedImports(session: session) }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Check import status", systemImage: "arrow.clockwise") {
+                            Task { await healthSync.refreshQueuedImports(session: session) }
+                        }.disabled(healthSync.isBusy)
+                    }
+                }
+            } else {
+                EmptyMessage(title: "Import unavailable", message: "Open Health Sync to check this workout.", symbol: "clock.arrow.circlepath")
+            }
+        }
+    }
+    private func statusMessage(_ record: HealthSyncRecord) -> String {
+        switch record.state {
+        case .queued: return "Dreeve accepted this workout and is processing it. These are the saved Apple Health details."
+        case .uncertain: return "The upload has not been confirmed. Its status will be checked without sending another copy."
+        case .failed: return "Dreeve could not import this workout. Review it in Health Sync before retrying."
+        case .imported, .skipped: return "Dreeve confirmed the import. Showing saved details until the completed activity is available in your feed."
+        default: return "Dreeve is finishing this import. These are the saved Apple Health details."
         }
     }
 }
