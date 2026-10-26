@@ -58,7 +58,10 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
     }
     private func receive(_ data: Data) {
         do {
-            if try storage.accept(data) {
+            let accepted = try storage.accept(data)
+            // Context may arrive before its priority notification. The latter must
+            // still request a timeline reload, even when its revision is a duplicate.
+            if accepted || storage.envelope()?.matches(payload: ["goalEnvelope": data]) == true {
                 WidgetCenter.shared.reloadTimelines(ofKind: "DreeveWatchGoal")
                 WidgetCenter.shared.invalidateConfigurationRecommendations()
             }
@@ -93,7 +96,7 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
     }
     private func completeBackgroundTasks() {
         let session = WCSession.default
-        guard activationCompleted, session.activationState != .activated || !session.hasContentPending else { return }
+        guard activationCompleted, session.activationState == .activated, !session.hasContentPending else { return }
         let finished = backgroundTasks; backgroundTasks = []
         for task in finished { task.setTaskCompletedWithSnapshot(false) }
     }

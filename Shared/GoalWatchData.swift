@@ -25,6 +25,13 @@ struct GoalWatchEnvelope: Codable, Equatable {
         if data.count <= Self.contextBytes { return ["goalEnvelope": data] }
         return ["goalFilePending": true, "revision": revision, "senderID": senderID]
     }
+    func matches(payload: [String: Any]) -> Bool {
+        if let data = payload["goalEnvelope"] as? Data,
+           let envelope = try? Self.decode(data) {
+            return envelope.senderID == senderID && envelope.revision == revision
+        }
+        return payload["senderID"] as? String == senderID && payload["revision"] as? Int == revision
+    }
     func supersedes(_ previous: GoalWatchEnvelope?) -> Bool {
         guard let previous else { return true }
         if senderID == previous.senderID { return revision > previous.revision }
@@ -77,6 +84,10 @@ struct GoalWatchStorage {
     }
     func readResult() -> GoalWidgetReadResult {
         envelope().map { .available($0.snapshot) } ?? .unavailable
+    }
+    func remove() throws {
+        guard let url else { return }
+        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
     }
     func write(_ envelope: GoalWatchEnvelope) throws {
         guard let url else { throw CocoaError(.fileNoSuchFile) }

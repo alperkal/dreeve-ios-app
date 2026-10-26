@@ -80,6 +80,12 @@ struct WatchGoalComplicationView: View {
     @Environment(\.widgetFamily) private var family
     let entry: WatchComplicationEntry
     private let accent = Color(red: 177/255, green: 244/255, blue: 82/255)
+    private func progressTint(_ fraction: Double) -> Gradient {
+        Gradient(stops: [
+            .init(color: accent, location: 0), .init(color: accent, location: fraction),
+            .init(color: .gray.opacity(0.35), location: fraction), .init(color: .gray.opacity(0.35), location: 1)
+        ])
+    }
     var body: some View {
         Group {
             if let goal = entry.goal {
@@ -91,10 +97,17 @@ struct WatchGoalComplicationView: View {
                     }
                     .font(.system(.title3, design: .rounded).bold())
                     .widgetLabel {
-                        Gauge(value: goal.fraction(at: entry.date)) { Text(goal.title) }
-                        currentValueLabel: { Text(value == nil ? "Refresh" : goal.progressText(at: entry.date)) }
-                        .tint(accent)
+                        if value == nil {
+                            Text("Open iPhone to update")
+                        } else {
+                            Gauge(value: goal.fraction(at: entry.date)) { Text(goal.title) }
+                            currentValueLabel: { Text(goal.progressText(at: entry.date)) }
+                            .tint(progressTint(goal.fraction(at: entry.date)))
+                        }
                     }
+                } else if value == nil {
+                    Image(systemName: "arrow.clockwise").foregroundStyle(.secondary)
+                        .widgetLabel { Text("Open iPhone to update") }
                 } else {
                     Gauge(value: goal.fraction(at: entry.date)) { Image(systemName: watchGoalSymbol(goal.sport)) }
                     currentValueLabel: {

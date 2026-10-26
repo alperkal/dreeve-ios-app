@@ -5,6 +5,9 @@ import WatchConnectivity
 @MainActor
 final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate {
     private let storage = GoalWatchStorage(directory: URL.applicationSupportDirectory.appendingPathComponent("WatchOutbound", isDirectory: true))
+    // Keep priority delivery state separate from the outbox: publishing before
+    // activation must not consume the update that should wake the complication.
+    private let priorityStorage = GoalWatchStorage(directory: URL.applicationSupportDirectory.appendingPathComponent("WatchOutbound/Priority", isDirectory: true))
     private var latest: GoalWatchEnvelope?
     private var started = false
 
@@ -20,29 +23,31 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
     }
     func publish(_ snapshot: GoalWidgetSnapshot) {
         let retained = snapshot.retainingKnownProgress(from: latest?.snapshot)
-        guard latest?.snapshot != retained else { return }
+        guard latest?.snapshot != retained else { sendLatest(); return }
         let sender = latest?.senderID ?? UUID().uuidString
         let envelope = GoalWatchEnvelope(version: 1, senderID: sender, revision: (latest?.revision ?? 0) + 1,
             sentAt: max(Date.now, latest?.sentAt.addingTimeInterval(0.001) ?? .distantPast), snapshot: retained)
         do {
             try storage.write(envelope)
-            let priority = envelope.changesVisibleGoals(from: latest)
             latest = envelope
-            sendLatest(priority: priority)
+            sendLatest()
         } catch { /* Keep the previous valid envelope; retry on the next publication. */ }
     }
     private func payload() -> [String: Any] {
         (try? latest?.contextPayload()) ?? [:]
     }
-    private func sendLatest(priority: Bool = false) {
+    private func sendLatest() {
         let session = WCSession.default
         guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled, latest != nil else { return }
         let context = payload()
         guard !context.isEmpty else { return }
-        do { try session.updateApplicationContext(context) } catch { return }
+        // A context error must not discard an independently eligible priority send.
+        try? session.updateApplicationContext(context)
         if context["goalFilePending"] != nil { queueFile() }
-        if priority, session.isComplicationEnabled, session.remainingComplicationUserInfoTransfers > 0 {
+        if let latest, latest.changesVisibleGoals(from: priorityStorage.envelope()),
+           session.isComplicationEnabled, session.remainingComplicationUserInfoTransfers > 0 {
             session.transferCurrentComplicationUserInfo(context)
+            try? priorityStorage.write(latest)
         }
     }
     private func queueFile() {
@@ -72,6 +77,16 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
         Task { @MainActor in
             self.sendLatest()
             replyHandler(self.payload())
+        }
+    }
+    nonisolated func session(_ session: WCSession, didFinish userInfoTransfer: WCSessionUserInfoTransfer, error: Error?) {
+        guard error != nil else { return }
+        let payload = userInfoTransfer.userInfo
+        Task { @MainActor in
+            // Re-arm a failed priority transfer, without clearing a newer send.
+            if let queued = self.priorityStorage.envelope(), queued.matches(payload: payload) {
+                try? self.priorityStorage.remove()
+            }
         }
     }
     nonisolated func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {

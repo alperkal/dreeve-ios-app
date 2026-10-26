@@ -61,6 +61,54 @@ import Foundation
         precondition(!envelope(5, snapshot: timestampOnly).changesVisibleGoals(from: next)) // preserve priority transfer budget
         precondition(!envelope(1, senderID: UUID().uuidString, sentAt: now.addingTimeInterval(-1)).supersedes(next))
         precondition(envelope(1, senderID: UUID().uuidString, sentAt: now.addingTimeInterval(1)).supersedes(next))
+        // Sunday completion -> Monday unknown -> first Monday run. Persisted outbox
+        // and priority-send checkpoint differ when publication precedes WC activation.
+        let dates = DateFormatter()
+        dates.calendar = Calendar(identifier: .gregorian); dates.timeZone = .current
+        dates.locale = Locale(identifier: "en_US_POSIX"); dates.dateFormat = "yyyy-MM-dd HH:mm"
+        let sunday = dates.date(from: "2026-10-25 23:55")!
+        let monday = dates.date(from: "2026-10-26 09:00")!
+        func week(_ start: String, _ end: String, _ current: Double?, at date: Date) -> GoalWidgetSnapshot {
+            GoalWidgetSnapshot(instanceID: "weekly-instance", updatedAt: date, refreshFailed: false, favorites: ["weekly"], goals: [
+                WidgetGoal(id: "weekly", title: "Weekly run", sport: "Run", frequency: "Weekly", isDistance: true,
+                    target: 30, current: current, periodStart: start, periodEnd: end)
+            ])
+        }
+        let sundayPacket = envelope(10, snapshot: week("2026-10-19", "2026-10-26", 30, at: sunday))
+        let rolloverPacket = envelope(11, snapshot: week("2026-10-26", "2026-11-02", nil, at: monday))
+        let runPacket = envelope(12, snapshot: week("2026-10-26", "2026-11-02", 6, at: monday))
+        precondition(sundayPacket.snapshot.goals[0].isComplete(at: sunday))
+        precondition(sundayPacket.snapshot.goals[0].value(at: monday) == nil)
+        precondition(!sundayPacket.snapshot.goals[0].isComplete(at: monday))
+        let priority = GoalWatchStorage(directory: root.appendingPathComponent("priority"))
+        let outbound = GoalWatchStorage(directory: root.appendingPathComponent("outbound"))
+        try priority.write(sundayPacket)
+        try outbound.write(rolloverPacket)
+        try outbound.write(runPacket) // phone updated while the WC session was inactive
+        let restartedOutbox = GoalWatchStorage(directory: root.appendingPathComponent("outbound"))
+        precondition(restartedOutbox.envelope()!.changesVisibleGoals(from: priority.envelope()))
+        try priority.write(runPacket) // only mark after actually queueing the priority transfer
+        precondition(!runPacket.changesVisibleGoals(from: priority.envelope()))
+        let runPayload = try runPacket.contextPayload()
+        let rolloverPayload = try rolloverPacket.contextPayload()
+        precondition(runPacket.matches(payload: runPayload))
+        precondition(!runPacket.matches(payload: rolloverPayload))
+        try priority.remove() // failed send re-arms the pending update
+        precondition(runPacket.changesVisibleGoals(from: priority.envelope()))
+        let watch = GoalWatchStorage(directory: root.appendingPathComponent("week-watch"))
+        let acceptedSunday = try watch.accept(JSONEncoder().encode(sundayPacket))
+        let acceptedRollover = try watch.accept(JSONEncoder().encode(rolloverPacket))
+        precondition(acceptedSunday && acceptedRollover)
+        precondition(watch.readResult().snapshot!.goals[0].value(at: monday) == nil)
+        let acceptedRun = try watch.accept(JSONEncoder().encode(runPacket))
+        precondition(acceptedRun)
+        let runGoal = watch.readResult().snapshot!.goals[0]
+        precondition(runGoal.value(at: monday) == 6 && runGoal.fraction(at: monday) == 0.2)
+        let duplicatePriority = try watch.accept(JSONEncoder().encode(runPacket))
+        precondition(!duplicatePriority) // a following priority callback still reloads this current revision
+        precondition(watch.envelope()!.matches(payload: runPayload))
+        let delayedRollover = try watch.accept(JSONEncoder().encode(rolloverPacket))
+        precondition(!delayedRollover && watch.readResult().snapshot!.goals[0].value(at: monday) == 6)
         let titles = String(repeating: "Synthetic long goal title ", count: 50)
         let manyGoals = (0..<200).map { index in
             WidgetGoal(id: "goal-\(index)", title: titles, sport: "Run", frequency: "Weekly", isDistance: true,
@@ -83,6 +131,6 @@ import Foundation
         for forbidden in ["https://", "authorization", "bearer", "api_key", "healthkit", "latitude", "longitude"] {
             precondition(!text.contains(forbidden))
         }
-        print("Watch goal tests passed: durable offline snapshots, ordered transfer/logout, instance-scoped selection/deep links, missing goals, rollover/completion, file fallback, priority budget, invalid payload preservation and credential-free schema.")
+        print("Watch goal tests passed: durable offline snapshots, ordered transfer/logout, instance-scoped selection/deep links, missing goals, rollover/first-run recovery, pending priority delivery after activation/restart, duplicate priority arrivals, completion, file fallback, priority budget, invalid payload preservation and credential-free schema.")
     }
 }
