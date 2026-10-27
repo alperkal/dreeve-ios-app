@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var session: DreeveSession
+    @EnvironmentObject private var watchBridge: PhoneGoalWatchBridge
     @State private var url = ""
     @State private var key = ""
     @State private var isWorking = false
@@ -57,6 +58,14 @@ struct SettingsView: View {
                             .tint(DreeveTheme.accent)
                             .foregroundStyle(DreeveTheme.background)
                             .disabled(isWorking)
+                        }
+                    }
+                    SurfaceCard {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Label("Apple Watch", systemImage: "applewatch").font(.headline)
+                            Text(watchBridge.syncStatus).font(.caption).foregroundStyle(DreeveTheme.muted)
+                            Button("Retry Watch sync") { watchBridge.retry() }
+                                .buttonStyle(.bordered)
                         }
                     }
                     Button("Disconnect", role: .destructive) { confirmDisconnect = true }

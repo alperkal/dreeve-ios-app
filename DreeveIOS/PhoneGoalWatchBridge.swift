@@ -10,6 +10,9 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
     private let priorityStorage = GoalWatchStorage(directory: URL.applicationSupportDirectory.appendingPathComponent("WatchOutbound/Priority", isDirectory: true))
     private var latest: GoalWatchEnvelope?
     private var started = false
+    @Published private(set) var syncStatus = "Waiting for Watch connection."
+    private var liveInFlight: GoalWatchEnvelope?
+    private var lastAcknowledged: GoalWatchEnvelope?
 
     override init() { super.init(); latest = storage.envelope() }
     func start() {
@@ -17,6 +20,14 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
         if !started { started = true; WCSession.default.delegate = self; WCSession.default.activate() }
         else if WCSession.default.activationState == .notActivated { WCSession.default.activate() }
         else { sendLatest() }
+    }
+    func retry() {
+        lastAcknowledged = nil
+        liveInFlight = nil
+        if let cached = GoalWatchEnvelope.recoverableSnapshot(GoalWidgetStorage().readResult().snapshot, after: latest) {
+            publish(cached)
+        }
+        start()
     }
     func selectInstance(_ instance: String?) {
         if instance == nil || latest?.snapshot.instanceID != instance { publish(.empty) }
@@ -31,24 +42,59 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
             try storage.write(envelope)
             latest = envelope
             sendLatest()
-        } catch { /* Keep the previous valid envelope; retry on the next publication. */ }
+        } catch { syncStatus = "Couldn’t save Watch update: \(error.localizedDescription)" }
     }
     private func payload() -> [String: Any] {
         (try? latest?.contextPayload()) ?? [:]
     }
     private func sendLatest() {
         let session = WCSession.default
-        guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled, latest != nil else { return }
+        guard session.activationState == .activated else { syncStatus = "Connecting to Watch…"; return }
+        guard session.isPaired else { syncStatus = "No paired Apple Watch."; return }
+        guard session.isWatchAppInstalled else { syncStatus = "Install Dreeve on your Apple Watch."; return }
+        guard let latest else { syncStatus = "Waiting for saved goal progress."; return }
         let context = payload()
-        guard !context.isEmpty else { return }
+        guard !context.isEmpty else { syncStatus = "Couldn’t prepare goals for Watch."; return }
+        if lastAcknowledged?.senderID == latest.senderID && lastAcknowledged?.revision == latest.revision {
+            syncStatus = "Watch confirmed the current goals (update \(latest.revision))."
+        } else {
+            syncStatus = "Goal update \(latest.revision) prepared; waiting for Watch confirmation."
+        }
+        sendLive(context, envelope: latest)
         // A context error must not discard an independently eligible priority send.
-        try? session.updateApplicationContext(context)
+        do { try session.updateApplicationContext(context) }
+        catch { syncStatus = "Couldn’t queue Watch update: \(error.localizedDescription)" }
         if context["goalFilePending"] != nil { queueFile() }
-        if let latest, latest.changesVisibleGoals(from: priorityStorage.envelope()),
+        if latest.changesVisibleGoals(from: priorityStorage.envelope()),
            session.isComplicationEnabled, session.remainingComplicationUserInfoTransfers > 0 {
             session.transferCurrentComplicationUserInfo(context)
             try? priorityStorage.write(latest)
         }
+    }
+    private func sendLive(_ context: [String: Any], envelope: GoalWatchEnvelope) {
+        let session = WCSession.default
+        guard session.isReachable, liveInFlight?.matches(payload: context) != true,
+              lastAcknowledged?.matches(payload: context) != true else { return }
+        liveInFlight = envelope
+        session.sendMessage(context, replyHandler: { reply in
+            Task { @MainActor in
+                if self.liveInFlight == envelope { self.liveInFlight = nil }
+                guard self.latest?.senderID == envelope.senderID, self.latest?.revision == envelope.revision else { return }
+                guard reply["savedSenderID"] as? String == envelope.senderID,
+                      reply["savedRevision"] as? Int == envelope.revision else {
+                    self.syncStatus = "Watch received a message but did not confirm saving this update."
+                    return
+                }
+                self.lastAcknowledged = envelope
+                self.syncStatus = "Watch saved goal update \(envelope.revision)."
+            }
+        }, errorHandler: { error in
+            Task { @MainActor in
+                if self.liveInFlight == envelope { self.liveInFlight = nil }
+                guard self.latest?.senderID == envelope.senderID, self.latest?.revision == envelope.revision else { return }
+                self.syncStatus = "Live Watch sync failed: \(error.localizedDescription)"
+            }
+        })
     }
     private func queueFile() {
         guard let latest else { return }
@@ -67,7 +113,17 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
         } catch {}
     }
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        Task { @MainActor in self.sendLatest() }
+        Task { @MainActor in
+            if let error { self.syncStatus = "Watch connection failed: \(error.localizedDescription)" }
+            else { self.sendLatest() }
+        }
+    }
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        Task { @MainActor in
+            self.lastAcknowledged = nil
+            self.liveInFlight = nil
+            self.sendLatest()
+        }
     }
     nonisolated func sessionWatchStateDidChange(_ session: WCSession) { Task { @MainActor in self.sendLatest() } }
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {}
@@ -75,6 +131,9 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
     nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
         guard message["requestGoals"] as? Bool == true else { replyHandler([:]); return }
         Task { @MainActor in
+            if let cached = GoalWatchEnvelope.recoverableSnapshot(GoalWidgetStorage().readResult().snapshot, after: self.latest) {
+                self.publish(cached)
+            }
             self.sendLatest()
             replyHandler(self.payload())
         }

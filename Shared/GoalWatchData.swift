@@ -19,6 +19,12 @@ struct GoalWatchEnvelope: Codable, Equatable {
               !value.snapshot.instanceID.isEmpty || value.snapshot == .empty else { throw CocoaError(.fileReadCorruptFile) }
         return value
     }
+    static func recoverableSnapshot(_ cached: GoalWidgetSnapshot?, after latest: GoalWatchEnvelope?) -> GoalWidgetSnapshot? {
+        guard let cached, !cached.instanceID.isEmpty,
+              latest == nil || latest?.snapshot.instanceID == cached.instanceID,
+              let updated = cached.updatedAt, updated > (latest?.snapshot.updatedAt ?? .distantPast) else { return nil }
+        return cached
+    }
     func contextPayload() throws -> [String: Any] {
         let data = try JSONEncoder().encode(self)
         _ = try Self.decode(data)
@@ -37,6 +43,11 @@ struct GoalWatchEnvelope: Codable, Equatable {
         if senderID == previous.senderID { return revision > previous.revision }
         // A fresh phone installation has a new sender. Reject older queued deliveries.
         return sentAt > previous.sentAt
+    }
+    func needsTimelineReload(replacing previous: GoalWatchEnvelope?, force: Bool = false) -> Bool {
+        let duplicate = previous?.senderID == senderID && previous?.revision == revision
+        guard supersedes(previous) || duplicate else { return false }
+        return force || changesVisibleGoals(from: previous)
     }
     func changesVisibleGoals(from previous: GoalWatchEnvelope?) -> Bool {
         guard let old = previous?.snapshot else { return true }
@@ -118,4 +129,23 @@ func watchGoalSymbol(_ sport: String) -> String {
     if sport.contains("swim") { return "figure.pool.swim" }
     if sport.contains("row") { return "figure.rower" }
     return "target"
+}
+
+/// Foreground requests survive activation/reachability transitions without
+/// overlapping sends or letting a delayed callback finish a newer request.
+struct WatchGoalRequestGate {
+    var isForeground = false
+    private var request: (id: UUID, started: Date)?
+    mutating func begin(activated: Bool, reachable: Bool, now: Date) -> UUID? {
+        guard isForeground, activated, reachable else { return nil }
+        if let request, now.timeIntervalSince(request.started) < 30 { return nil }
+        let id = UUID()
+        request = (id, now)
+        return id
+    }
+    @discardableResult mutating func finish(_ id: UUID) -> Bool {
+        guard request?.id == id else { return false }
+        request = nil
+        return true
+    }
 }

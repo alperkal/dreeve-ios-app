@@ -12,6 +12,7 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
     private let storage = GoalWatchStorage()
     private var backgroundTasks: [WKRefreshBackgroundTask] = []
     private var activationCompleted = false
+    private var requestGate = WatchGoalRequestGate()
     private var sessionObservations: [NSKeyValueObservation] = []
     override init() {
         let result = GoalWatchStorage().readResult()
@@ -32,21 +33,31 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
     func reloadSaved() {
         if let saved = storage.readResult().snapshot { snapshot = saved; unavailable = false }
     }
-    func requestLatest() {
+    func setForeground(_ active: Bool) {
+        requestGate.isForeground = active
+    }
+    func requestLatest(refreshComplication: Bool = false) {
         reloadSaved()
         let session = WCSession.default
         guard session.activationState == .activated else { message = "Connecting to iPhone…"; return }
         if let data = session.receivedApplicationContext["goalEnvelope"] as? Data { receive(data) }
-        guard session.isReachable else { message = "iPhone unavailable. Showing saved progress."; return }
+        guard session.isReachable else { message = "Showing last received goals. Live iPhone connection unavailable."; return }
+        guard let requestID = requestGate.begin(activated: true, reachable: true, now: .now) else { return }
         message = "Checking iPhone…"
         session.sendMessage(["requestGoals": true], replyHandler: { reply in
-            Task { @MainActor in self.receive(reply) }
-        }, errorHandler: { _ in
-            Task { @MainActor in self.message = "iPhone unavailable. Showing saved progress." }
+            Task { @MainActor in
+                guard self.requestGate.finish(requestID) else { return }
+                self.receive(reply, refreshComplication: refreshComplication)
+            }
+        }, errorHandler: { error in
+            Task { @MainActor in
+                guard self.requestGate.finish(requestID) else { return }
+                self.message = "Couldn’t reach iPhone: \(error.localizedDescription)"
+            }
         })
     }
-    private func receive(_ payload: [String: Any]) {
-        if let data = payload["goalEnvelope"] as? Data { receive(data) }
+    private func receive(_ payload: [String: Any], refreshComplication: Bool = false) {
+        if let data = payload["goalEnvelope"] as? Data { receive(data, refreshComplication: refreshComplication) }
         else if payload["goalFilePending"] != nil {
             let cached = storage.envelope()
             if cached?.senderID == payload["senderID"] as? String,
@@ -56,30 +67,54 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
         } else { message = "Open Dreeve on iPhone to share your goals." }
         completeBackgroundTasks()
     }
-    private func receive(_ data: Data) {
+    private func receive(_ data: Data, refreshComplication: Bool = false) {
         do {
+            let incoming = try GoalWatchEnvelope.decode(data)
+            let previous = storage.envelope()
             let accepted = try storage.accept(data)
-            // Context may arrive before its priority notification. The latter must
-            // still request a timeline reload, even when its revision is a duplicate.
-            if accepted || storage.envelope()?.matches(payload: ["goalEnvelope": data]) == true {
+            // Ordinary foreground polls do not redraw identical goals. A priority
+            // arrival/manual refresh can still reload a duplicate current revision.
+            if incoming.needsTimelineReload(replacing: previous, force: refreshComplication) {
                 WidgetCenter.shared.reloadTimelines(ofKind: "DreeveWatchGoal")
                 WidgetCenter.shared.invalidateConfigurationRecommendations()
             }
             reloadSaved()
-            message = nil
-        } catch { message = "Couldn’t update saved goals. Open Dreeve on iPhone to retry." }
+            if accepted || storage.envelope()?.matches(payload: ["goalEnvelope": data]) == true {
+                message = "Goals received from iPhone."
+            } else {
+                message = "iPhone sent an older update. Saved progress was kept."
+            }
+        } catch {
+            message = "Couldn’t save goals from iPhone: \(error.localizedDescription)"
+        }
     }
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
-            self.activationCompleted = true
+            self.activationCompleted = activationState == .activated
+            if let error { self.message = "Watch connection failed: \(error.localizedDescription)"; return }
             self.receive(WCSession.default.receivedApplicationContext)
+            if self.requestGate.isForeground { self.requestLatest() }
+        }
+    }
+    nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+        DispatchQueue.main.async {
+            if self.requestGate.isForeground { self.requestLatest() }
+        }
+    }
+    nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        DispatchQueue.main.async {
+            self.receive(message)
+            // Acknowledge only data actually persisted to the shared Watch store.
+            if let saved = self.storage.envelope(), saved.matches(payload: message) {
+                replyHandler(["savedSenderID": saved.senderID, "savedRevision": saved.revision])
+            } else { replyHandler([:]) }
         }
     }
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         DispatchQueue.main.async { self.receive(applicationContext) }
     }
     nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
-        DispatchQueue.main.async { self.receive(userInfo) }
+        DispatchQueue.main.async { self.receive(userInfo, refreshComplication: true) }
     }
     nonisolated func session(_ session: WCSession, didReceive file: WCSessionFile) {
         // WCSession deletes the supplied file when this callback returns.
@@ -114,8 +149,15 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate {
         WindowGroup {
             WatchGoalsView().environmentObject(store)
                 .tint(watchAccent)
-                .task { store.requestLatest() }
-                .onChange(of: phase) { _, value in if value == .active { store.requestLatest() } }
+                .onChange(of: phase) { _, value in store.setForeground(value == .active) }
+                .task(id: phase) {
+                    store.setForeground(phase == .active)
+                    guard phase == .active else { return }
+                    while !Task.isCancelled {
+                        store.requestLatest()
+                        do { try await Task.sleep(for: .seconds(15)) } catch { break }
+                    }
+                }
         }
     }
 }
@@ -141,7 +183,7 @@ struct WatchGoalsView: View {
                         }
                     }
                 }
-                Button("Sync from iPhone") { store.requestLatest() }
+                Button("Sync from iPhone") { store.requestLatest(refreshComplication: true) }
                 if let message = store.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
                 Text("Refresh Dreeve on iPhone to update activities.").font(.footnote).foregroundStyle(.secondary)
             }
@@ -175,7 +217,7 @@ struct WatchGoalDetail: View {
                         Text(goal.frequency).font(.caption).foregroundStyle(.secondary)
                         if goal.value(at: timeline.date) == nil { Text("New period · refresh on iPhone").font(.caption) }
                         else if store.snapshot.isStale(at: timeline.date) { Text("Saved progress").font(.caption).foregroundStyle(.secondary) }
-                        Button("Sync from iPhone") { store.requestLatest() }
+                        Button("Sync from iPhone") { store.requestLatest(refreshComplication: true) }
                         if let message = store.message { Text(message).font(.caption).foregroundStyle(.secondary) }
                         Text("Refresh activities in Dreeve on iPhone.").font(.footnote).foregroundStyle(.secondary)
                     }.padding(.horizontal, 8)

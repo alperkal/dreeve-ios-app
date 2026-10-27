@@ -109,6 +109,40 @@ import Foundation
         precondition(watch.envelope()!.matches(payload: runPayload))
         let delayedRollover = try watch.accept(JSONEncoder().encode(rolloverPacket))
         precondition(!delayedRollover && watch.readResult().snapshot!.goals[0].value(at: monday) == 6)
+        // Foreground refresh must recover after activation/reachability changes,
+        // avoid overlapping requests, and ignore callbacks from timed-out requests.
+        var gate = WatchGoalRequestGate()
+        precondition(gate.begin(activated: true, reachable: true, now: now) == nil)
+        gate.isForeground = true
+        precondition(gate.begin(activated: false, reachable: false, now: now) == nil)
+        precondition(gate.begin(activated: true, reachable: false, now: now) == nil)
+        let firstRequest = gate.begin(activated: true, reachable: true, now: now)!
+        precondition(gate.begin(activated: true, reachable: true, now: now.addingTimeInterval(15)) == nil)
+        let timeoutRetry = gate.begin(activated: true, reachable: true, now: now.addingTimeInterval(31))!
+        precondition(!gate.finish(firstRequest))
+        precondition(gate.finish(timeoutRetry))
+        let nextRequest = gate.begin(activated: true, reachable: true, now: now.addingTimeInterval(32))!
+        precondition(gate.finish(nextRequest))
+        gate.isForeground = false
+        precondition(gate.begin(activated: true, reachable: true, now: now.addingTimeInterval(60)) == nil)
+        // Polls persist metadata without repeatedly spending complication redraws.
+        precondition(!envelope(5, snapshot: timestampOnly).needsTimelineReload(replacing: next))
+        precondition(envelope(5, snapshot: complete).needsTimelineReload(replacing: next))
+        precondition(!next.needsTimelineReload(replacing: next))
+        precondition(next.needsTimelineReload(replacing: next, force: true))
+        precondition(!envelope(2).needsTimelineReload(replacing: next, force: true))
+        precondition(!envelope(1, senderID: UUID().uuidString, sentAt: now.addingTimeInterval(-1))
+            .needsTimelineReload(replacing: next, force: true))
+        precondition(cleared.needsTimelineReload(replacing: envelope(2)))
+        // Recovery from the phone widget must never resurrect a logged-out instance
+        // or overwrite an equally recent goal-definition edit with an older cache.
+        precondition(GoalWatchEnvelope.recoverableSnapshot(timestampOnly, after: next) == timestampOnly)
+        precondition(GoalWatchEnvelope.recoverableSnapshot(snapshot, after: next) == nil)
+        precondition(GoalWatchEnvelope.recoverableSnapshot(other, after: next) == nil)
+        precondition(GoalWatchEnvelope.recoverableSnapshot(snapshot, after: cleared) == nil)
+        precondition(GoalWatchEnvelope.recoverableSnapshot(nil, after: next) == nil)
+        precondition(GoalWatchEnvelope.recoverableSnapshot(snapshot, after: nil) == snapshot)
+
         let titles = String(repeating: "Synthetic long goal title ", count: 50)
         let manyGoals = (0..<200).map { index in
             WidgetGoal(id: "goal-\(index)", title: titles, sport: "Run", frequency: "Weekly", isDistance: true,
@@ -131,6 +165,6 @@ import Foundation
         for forbidden in ["https://", "authorization", "bearer", "api_key", "healthkit", "latitude", "longitude"] {
             precondition(!text.contains(forbidden))
         }
-        print("Watch goal tests passed: durable offline snapshots, ordered transfer/logout, instance-scoped selection/deep links, missing goals, rollover/first-run recovery, pending priority delivery after activation/restart, duplicate priority arrivals, completion, file fallback, priority budget, invalid payload preservation and credential-free schema.")
+        print("Watch goal tests passed: durable offline snapshots, ordered transfer/logout, instance-scoped selection/deep links, missing goals, rollover/first-run recovery, pending priority delivery after activation/restart, duplicate priority arrivals, foreground activation/reachability retries and timeouts, unchanged-poll redraw suppression, scoped cache recovery, completion, file fallback, priority budget, invalid payload preservation and credential-free schema.")
     }
 }
