@@ -378,6 +378,14 @@ public actor ActivityIndexStore {
 
     // MARK: - Instant Local Queries
 
+    public func queryActivity(instanceHash: String, activityId: String) throws -> ActivitySummaryRecord? {
+        let context = ModelContext(container)
+        let scopedId = IndexedActivity.makeScopedId(instanceHash: instanceHash, activityId: activityId)
+        var descriptor = FetchDescriptor<IndexedActivity>(predicate: #Predicate { $0.scopedId == scopedId })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first?.toRecord()
+    }
+
     public func queryByGear(instanceHash: String, gearId: String) throws -> [ActivitySummaryRecord] {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<IndexedActivity>(
@@ -407,6 +415,18 @@ public actor ActivityIndexStore {
                 SortDescriptor(\.activityId, order: .reverse)
             ]
         )
+        return try context.fetch(descriptor).map { $0.toRecord() }
+    }
+
+    /// Stable, bounded pages for the offline activity feed. Request one extra row
+    /// to determine whether more cached records exist.
+    public func queryPage(instanceHash: String, offset: Int, limit: Int) throws -> [ActivitySummaryRecord] {
+        let context = ModelContext(container)
+        var descriptor = FetchDescriptor<IndexedActivity>(
+            predicate: #Predicate { $0.instanceHash == instanceHash },
+            sortBy: [SortDescriptor(\.startDateLocal, order: .reverse), SortDescriptor(\.activityId, order: .reverse)])
+        descriptor.fetchOffset = max(0, offset)
+        descriptor.fetchLimit = max(1, limit)
         return try context.fetch(descriptor).map { $0.toRecord() }
     }
 

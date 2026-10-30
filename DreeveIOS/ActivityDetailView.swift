@@ -9,6 +9,14 @@ struct ActivityDetailView: View {
     let activityID: String
 
     @State private var activity: DreeveActivity?
+    @State private var showingSavedActivity = true
+    @State private var loadFailure: String?
+    @State private var isLoadingActivity = true
+
+    init(activityID: String, cachedActivity: DreeveActivity? = nil) {
+        self.activityID = activityID
+        _activity = State(initialValue: cachedActivity)
+    }
     @State private var gear: [DreeveGear] = []
     @State private var loadingGear = true
     @State private var gearError: String?
@@ -25,6 +33,12 @@ struct ActivityDetailView: View {
         ScrollView {
             if let activity {
                 VStack(alignment: .leading, spacing: 20) {
+                    if showingSavedActivity {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(isLoadingActivity ? "Showing saved activity while refreshing." : "Showing saved activity. Some details may be unavailable.")
+                            if !isLoadingActivity { Button("Retry") { Task { await load() } } }
+                        }.font(.caption).foregroundStyle(DreeveTheme.muted)
+                    }
                     HStack(spacing: 11) {
                         Image(systemName: activitySymbol(activity.sportType))
                             .font(.title)
@@ -53,21 +67,21 @@ struct ActivityDetailView: View {
                                 } else {
                                     Text("Assigned gear: \(id)")
                                     if loadingGear { ProgressView("Loading gear…") }
-                                    else if gearError == nil {
+                                    else if gearError == nil && !showingSavedActivity {
                                         Text("This gear is no longer in the inventory.").font(.caption)
                                     }
                                 }
                             } else {
                                 Text("No gear assigned")
                             }
-                            if let gearError {
+                            if let gearError, !showingSavedActivity {
                                 Text(gearError).font(.caption).foregroundStyle(.red)
                                 Button("Retry loading gear") { Task { await loadGear() } }
                                     .disabled(loadingGear)
                             }
                             Button("Change gear", systemImage: "pencil") { isEditing = true }
-                                .disabled(!session.canUpload || isBusy)
-                            if !session.canUpload {
+                                .disabled(showingSavedActivity || !session.canUpload || isBusy)
+                            if !session.canUpload && !showingSavedActivity {
                                 Text("Changing gear requires Dreeve file import mode.").font(.caption)
                             }
                         }
@@ -103,7 +117,7 @@ struct ActivityDetailView: View {
                             Text(description).padding(.top, 6)
                         }
                     }
-                    if let images = activity.images, !images.isEmpty {
+                    if !showingSavedActivity, let images = activity.images, !images.isEmpty {
                         Text("Photos").font(.title3.bold())
                         ScrollView(.horizontal) {
                             HStack(spacing: 10) {
@@ -123,6 +137,7 @@ struct ActivityDetailView: View {
                         Label("Open in Dreeve", systemImage: "globe")
                     }
                     .buttonStyle(.bordered).tint(DreeveTheme.accent)
+                    .disabled(showingSavedActivity)
 
                     Button { showingShareCardSheet = true } label: {
                         Label("Share activity card", systemImage: "sparkles.rectangle.stack")
@@ -134,8 +149,8 @@ struct ActivityDetailView: View {
                             Label("Add photo", systemImage: "photo.badge.plus")
                         }
                         .buttonStyle(.bordered)
-                        .disabled(isBusy || !session.canUpload)
-                        if activity.hasGpx == true {
+                        .disabled(showingSavedActivity || isBusy || !session.canUpload)
+                        if !showingSavedActivity && activity.hasGpx == true {
                             if let gpxFile {
                                 ShareLink(item: gpxFile) { Label("Share GPX", systemImage: "square.and.arrow.up") }
                                     .buttonStyle(.bordered)
@@ -153,7 +168,7 @@ struct ActivityDetailView: View {
                         }
                     }
                     .tint(DreeveTheme.accent)
-                    if !session.canUpload {
+                    if !session.canUpload && !showingSavedActivity {
                         Text("Photo upload requires Dreeve file import mode.")
                             .font(.caption)
                             .foregroundStyle(DreeveTheme.muted)
@@ -161,7 +176,15 @@ struct ActivityDetailView: View {
                 }
                 .padding(18)
             } else {
-                ProgressView("Loading activity…").frame(maxWidth: .infinity, minHeight: 300)
+                if isLoadingActivity {
+                    ProgressView("Loading activity…").frame(maxWidth: .infinity, minHeight: 300)
+                } else {
+                    VStack(spacing: 12) {
+                        Text("Activity unavailable").font(.headline)
+                        Text(loadFailure ?? "No saved activity is available.").font(.caption).foregroundStyle(DreeveTheme.muted)
+                        Button("Retry") { Task { await load() } }
+                    }.frame(maxWidth: .infinity, minHeight: 300)
+                }
             }
         }
         .dreeveBackground()
@@ -171,8 +194,9 @@ struct ActivityDetailView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Button("Edit", systemImage: "pencil") { isEditing = true }
-                            .disabled(!session.canUpload || isBusy)
+                            .disabled(showingSavedActivity || !session.canUpload || isBusy)
                         Button("Delete activity", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                            .disabled(showingSavedActivity || isBusy)
                     } label: { Image(systemName: "ellipsis.circle") }
                 }
             }
@@ -234,8 +258,20 @@ struct ActivityDetailView: View {
     }
 
     private func load() async {
-        do { activity = try await session.getActivity(activityID) }
-        catch { errorMessage = error.localizedDescription }
+        isLoadingActivity = true
+        loadFailure = nil
+        defer { isLoadingActivity = false }
+        if activity == nil { activity = await session.cachedActivity(activityID) }
+        do {
+            activity = try await session.getActivity(activityID)
+            showingSavedActivity = false
+        } catch {
+            guard !Task.isCancelled, (error as? URLError)?.code != .cancelled else { return }
+            showingSavedActivity = true
+            loadFailure = error.localizedDescription
+            loadingGear = false
+            return
+        }
         // Refresh capabilities after restoring a saved connection on app launch.
         do { _ = try await session.testConnection() }
         catch { errorMessage = error.localizedDescription }
