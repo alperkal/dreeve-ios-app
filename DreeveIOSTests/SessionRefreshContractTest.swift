@@ -19,7 +19,7 @@ enum KeychainStore {
 }
 
 private final class OverviewRefreshProtocol: URLProtocol {
-    enum Mode { case success, cancelled, serverFailure }
+    enum Mode { case success, cancelled, serverFailure, offline }
     static var mode: Mode = .success
     static var pages: [Int] = []
     static var fromFilters: [String?] = []
@@ -44,7 +44,10 @@ private final class OverviewRefreshProtocol: URLProtocol {
         let page = Int(query["pagination[page]"]!)!
         Self.pages.append(page)
         Self.fromFilters.append(query["filters[from]"])
-        precondition(query["pagination[size]"] == "100" && query["page"] == nil && query["limit"] == nil)
+        precondition(["25", "100"].contains(query["pagination[size]"]!) && query["page"] == nil && query["limit"] == nil)
+        if Self.mode == .offline {
+            client!.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)); return
+        }
         if Self.mode == .cancelled {
             client!.urlProtocol(self, didFailWithError: URLError(.cancelled)); return
         }
@@ -148,6 +151,43 @@ private final class OverviewRefreshProtocol: URLProtocol {
         await offline.loadCachedActivityIndex()
         precondition(offline.goalProgress.snapshot?.streakHistory?.throughDay == savedDay)
         precondition(OverviewRefreshProtocol.pages.isEmpty, "Cached history reload makes no API request")
+        // The main feed reads scoped persisted pages when offline, then recovers online.
+        let feedStore = try ActivityIndexStore(inMemory: true)
+        let cachedRows = (0..<60).map { number in
+            ActivitySummaryRecord(id: String(format: "cached-%03d", number), name: "Saved run", sportType: "Run",
+                                  startDateLocal: "2026-10-01T12:00:00", distanceMeters: 1000,
+                                  movingTimeSeconds: 300, elapsedTimeSeconds: 300, elevationGainMeters: 0, gearId: nil)
+        }
+        try await feedStore.upsertBatch(instanceHash: scope, records: cachedRows)
+        try await feedStore.upsertBatch(instanceHash: "another-instance", records: [cachedRows[0]])
+        OverviewRefreshProtocol.mode = .offline
+        let feed = DreeveSession(activityIndexStore: feedStore)
+        let cachedDetail = await feed.cachedActivity("cached-000")
+        precondition(cachedDetail?.name == "Saved run" && cachedDetail?.distanceInMeter == 1000)
+        let missingDetail = await feed.cachedActivity("missing")
+        precondition(missingDetail == nil)
+        await feed.reloadActivities()
+        precondition(feed.activities.count == 25 && feed.showingCachedActivities && feed.hasMore)
+        precondition(feed.activityListError != nil && !feed.activityIndexComplete && feed.errorMessage == nil)
+        await feed.loadMoreActivities()
+        precondition(feed.activities.count == 50 && feed.hasMore)
+        await feed.loadMoreActivities()
+        precondition(feed.activities.count == 60 && !feed.hasMore && Set(feed.activities.map(\.id)).count == 60)
+        await feed.reloadActivities()
+        precondition(feed.activities.count == 60 && feed.activityListError != nil)
+        OverviewRefreshProtocol.mode = .success
+        await feed.reloadActivities()
+        precondition(feed.activities.map(\.id) == ["run-1"] && !feed.showingCachedActivities && feed.activityListError == nil && feed.hasMore)
+        OverviewRefreshProtocol.mode = .serverFailure
+        await feed.loadMoreActivities()
+        precondition(feed.showingCachedActivities && feed.activityListError?.contains("500") == true)
+        precondition(feed.activities.contains { $0.id == "run-1" } && feed.activities.contains { $0.id.hasPrefix("cached-") })
+        precondition(Set(feed.activities.map(\.id)).count == feed.activities.count)
+        let emptyStore = try ActivityIndexStore(inMemory: true)
+        let emptyFeed = DreeveSession(activityIndexStore: emptyStore)
+        OverviewRefreshProtocol.mode = .offline
+        await emptyFeed.reloadActivities()
+        precondition(emptyFeed.activities.isEmpty && !emptyFeed.hasMore && emptyFeed.activityListError != nil)
         print("Session/index tests passed: shared full/delta refresh, real API query names, local gear/location, cached relaunch, combined goals, cancellation, failure/retry, and write-through edits/deletions.")
     }
 }

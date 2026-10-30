@@ -87,15 +87,26 @@ struct ActivitiesView: View {
                 Section { Text(error).font(.caption).foregroundStyle(.orange) }
             }
             Section {
+                if sportFilter == nil && selectedGearID == nil, let error = session.activityListError {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.activities.isEmpty ? "Could not load activities." : "Showing saved activities.")
+                        Text(error).font(.caption)
+                        if session.showingCachedActivities && !session.activityIndexComplete {
+                            Text("Saved activity history may be incomplete.").font(.caption)
+                        }
+                    }.foregroundStyle(.orange)
+                } else if sportFilter == nil && selectedGearID == nil && session.showingCachedActivities && !session.activityIndexComplete {
+                    Text("Saved activity history may be incomplete.").font(.caption).foregroundStyle(DreeveTheme.muted)
+                }
                 if sportFilter == nil && selectedGearID != nil && session.showsActivityIndexStatus { ActivityIndexStatusView() }
                 if visibleFeed.isEmpty && !isLoading {
-                    EmptyMessage(title: "No activities", message: sportFilter != nil ? "No matching activities in this period." : (selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear."), symbol: "figure.run")
+                    EmptyMessage(title: session.activityListError != nil && selectedGearID == nil && sportFilter == nil ? "Activities unavailable" : "No activities", message: session.activityListError != nil && selectedGearID == nil && sportFilter == nil ? "No saved activities are available. Pull to retry." : (sportFilter != nil ? "No matching activities in this period." : (selectedGearID == nil ? "Imported workouts will appear here." : "No activities are assigned to this gear.")), symbol: "figure.run")
                         .listRowBackground(Color.clear)
                 }
                 ForEach(visibleFeed) { entry in
                     switch entry {
                     case .activity(let activity):
-                        NavigationLink { ActivityDetailView(activityID: activity.id) } label: { ActivityRow(activity: activity) }
+                        NavigationLink { ActivityDetailView(activityID: activity.id, cachedActivity: activity) } label: { ActivityRow(activity: activity) }
                             .listRowBackground(DreeveTheme.surface)
                     case .importing(let record):
                         NavigationLink { ImportQueueDetailView(recordID: record.id) } label: {

@@ -11,6 +11,8 @@ final class DreeveSession: ObservableObject {
     @Published private(set) var insightsActivities: [DreeveActivity] = []
     @Published private(set) var calendarMonthActivities: [DreeveActivity] = []
     @Published private(set) var hasMore = true
+    @Published private(set) var showingCachedActivities = false
+    @Published private(set) var activityListError: String?
     @Published private(set) var isLoadingActivities = false
     @Published private(set) var isLoadingInsights = false
     @Published private(set) var didLoadInsights = false
@@ -38,6 +40,8 @@ final class DreeveSession: ObservableObject {
     let goalProgress = GoalProgressStore()
 
     private var page = 0
+    private var cachedActivityOffset = 0
+    private var activityRequestID = UUID()
     private let pageSize = 25
     private var client: DreeveAPIClient? {
         guard let url = try? DreeveAPIClient.validatedURL(serverAddress), let key = KeychainStore.read() else { return nil }
@@ -116,25 +120,80 @@ final class DreeveSession: ObservableObject {
         return status
     }
 
+    /// Display persisted summaries immediately and replace them only after a
+    /// successful first page. Failed refreshes never erase saved/visible results.
     func reloadActivities() async {
-        guard !isLoadingActivities else { return }
-        page = 0
-        hasMore = true
-        activities = []
-        await loadMoreActivities()
+        guard !isLoadingActivities, let client else { return }
+        let generation = connectionGeneration
+        let request = UUID(); activityRequestID = request; isLoadingActivities = true
+        defer { if activityRequestID == request { isLoadingActivities = false } }
+        if activities.isEmpty {
+            await loadCachedFeed(client: client, offset: 0, append: false, generation: generation, request: request)
+        }
+        do {
+            let result = try await client.activities(page: 1, size: pageSize)
+            guard generation == connectionGeneration, activityRequestID == request, !Task.isCancelled else { return }
+            var seen = Set<String>()
+            activities = result.activities.filter { seen.insert($0.id).inserted }
+            page = 1; hasMore = 1 < result.pagination.totalPages
+            showingCachedActivities = false; activityListError = nil
+        } catch {
+            guard generation == connectionGeneration, activityRequestID == request,
+                  !Task.isCancelled, !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+            activityListError = syncErrorDescription(error)
+            if !showingCachedActivities && activities.isEmpty { hasMore = false }
+        }
     }
 
     func loadMoreActivities() async {
         guard !isLoadingActivities, hasMore, let client else { return }
-        isLoadingActivities = true
-        defer { isLoadingActivities = false }
+        let generation = connectionGeneration
+        let request = UUID(); activityRequestID = request; isLoadingActivities = true
+        defer { if activityRequestID == request { isLoadingActivities = false } }
+        if showingCachedActivities {
+            await loadCachedFeed(client: client, offset: cachedActivityOffset, append: true, generation: generation, request: request)
+            return
+        }
         do {
             let next = page + 1
             let result = try await client.activities(page: next, size: pageSize)
-            activities += result.activities
-            page = next
-            hasMore = next < result.pagination.totalPages
-        } catch { errorMessage = error.localizedDescription }
+            guard generation == connectionGeneration, activityRequestID == request, !Task.isCancelled else { return }
+            var seen = Set(activities.map(\.id))
+            activities += result.activities.filter { seen.insert($0.id).inserted }
+            page = next; hasMore = next < result.pagination.totalPages; activityListError = nil
+        } catch {
+            guard generation == connectionGeneration, activityRequestID == request,
+                  !Task.isCancelled, !(error is CancellationError), (error as? URLError)?.code != .cancelled else { return }
+            activityListError = syncErrorDescription(error)
+            // Load saved history from the beginning, preserving visible server rows.
+            cachedActivityOffset = 0; showingCachedActivities = true
+            await loadCachedFeed(client: client, offset: 0, append: true, generation: generation, request: request,
+                                 minimumCount: max(pageSize, activities.count + pageSize))
+        }
+    }
+
+    private func loadCachedFeed(client: DreeveAPIClient, offset: Int, append: Bool, generation: Int, request: UUID,
+                                minimumCount: Int? = nil) async {
+        guard let store = activityIndexStore else { hasMore = false; return }
+        do {
+            let count = minimumCount ?? pageSize
+            let records = try await store.queryPage(instanceHash: GoalEngine.instanceID(client.baseURL), offset: offset, limit: count + 1)
+            let status = try await store.cursorStatus(instanceHash: GoalEngine.instanceID(client.baseURL))
+            guard generation == connectionGeneration, activityRequestID == request, !Task.isCancelled else { return }
+            let values = records.prefix(count).map(\.activity)
+            if append {
+                var seen = Set(activities.map(\.id))
+                activities += values.filter { seen.insert($0.id).inserted }
+                activities.sort { $0.startDateLocal == $1.startDateLocal ? $0.id > $1.id : $0.startDateLocal > $1.startDateLocal }
+            } else { activities = Array(values) }
+            cachedActivityOffset = offset + values.count
+            hasMore = records.count > count
+            showingCachedActivities = true
+            activityIndexComplete = status.completed
+        } catch {
+            guard generation == connectionGeneration, activityRequestID == request else { return }
+            hasMore = false
+        }
     }
 
     private func syncErrorDescription(_ error: Error) -> String {
@@ -164,6 +223,8 @@ final class DreeveSession: ObservableObject {
         lastImportIDs = []
         pendingImportFilenames = []
         activityIndexRevision += 1
+        activityRequestID = UUID(); isLoadingActivities = false
+        showingCachedActivities = false; activityListError = nil; cachedActivityOffset = 0
         goalProgress.finishIndexRefresh(error: nil)
     }
 
@@ -300,6 +361,14 @@ final class DreeveSession: ObservableObject {
         return records.map(\.activity)
     }
 
+
+    func cachedActivity(_ id: String) async -> DreeveActivity? {
+        guard let client, let store = activityIndexStore else { return nil }
+        let generation = connectionGeneration
+        let record = try? await store.queryActivity(instanceHash: GoalEngine.instanceID(client.baseURL), activityId: id)
+        guard generation == connectionGeneration else { return nil }
+        return record?.activity
+    }
 
     func getActivity(_ id: String) async throws -> DreeveActivity {
         guard let client else { throw APIError.notConfigured }
