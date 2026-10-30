@@ -50,3 +50,6 @@ swiftc -module-cache-path "$test_dir/cache" DreeveIOS/Models.swift DreeveIOS/Goa
 
 swiftc -module-cache-path "$test_dir/cache" Shared/GoalWidgetData.swift Shared/GoalWatchData.swift DreeveIOSTests/GoalWatchContractTest.swift -o "$test_dir/watch-goals"
 "$test_dir/watch-goals"
+
+swiftc -module-cache-path "$test_dir/cache" DreeveIOS/RoutesCore.swift DreeveIOSTests/RoutesContractTest.swift -o "$test_dir/routes"
+"$test_dir/routes"

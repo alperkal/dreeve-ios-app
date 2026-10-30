@@ -78,6 +78,9 @@ struct RootView: View {
                         .tabItem { Label("Health sync", systemImage: "heart") }
                         .tag(4)
                         .badge(healthDiscovery.visibleEntries.count)
+                    RoutesView()
+                        .tabItem { Label("Routes", systemImage: "map") }
+                        .tag(6)
                     NavigationStack { SettingsView() }
                         .tabItem { Label("Settings", systemImage: "gearshape") }
                         .tag(5)

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ABCDEF1234567890ABCDEF03 /* RoutesCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF1234567890ABCDEF04 /* RoutesCore.swift */; };
+		ABCDEF1234567890ABCDEF01 /* RoutesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDEF1234567890ABCDEF02 /* RoutesView.swift */; };
 		03D5273652825B25C2F553A5 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 595A787F0534A2FB5A149FEF /* KeychainStore.swift */; };
 		071C886151785B474B8DA1FF /* GoalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0DFDF584F71302EE73BD52 /* GoalStore.swift */; };
 		157EC19375B2FF8F781EC900 /* RouteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D48327B073CAD0CAA6233C59 /* RouteMapView.swift */; };
@@ -120,6 +122,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		ABCDEF1234567890ABCDEF04 /* RoutesCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutesCore.swift; sourceTree = "<group>"; };
+		ABCDEF1234567890ABCDEF02 /* RoutesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoutesView.swift; sourceTree = "<group>"; };
 		0289091E76AAE36D4B848D66 /* DreeveWatchWidgets/DreeveWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DreeveWatchWidgets/DreeveWatchWidgets.entitlements; sourceTree = SOURCE_ROOT; };
 		0636D48280DC61973188889F /* GoalWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalWidgetData.swift; sourceTree = "<group>"; };
 		086E45613F0140D53AF32BCA /* ActivitySyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivitySyncEngine.swift; sourceTree = "<group>"; };
@@ -286,6 +290,8 @@
 				595A787F0534A2FB5A149FEF /* KeychainStore.swift */,
 				42B5018550BC5DD2F6F2D770 /* Models.swift */,
 				D48327B073CAD0CAA6233C59 /* RouteMapView.swift */,
+				ABCDEF1234567890ABCDEF02 /* RoutesView.swift */,
+				ABCDEF1234567890ABCDEF04 /* RoutesCore.swift */,
 				10D630ADBBEA7FFCED795502 /* Session.swift */,
 				C138BEAD3976A020207BBB96 /* SettingsView.swift */,
 				2B8399F61B31F2F97A3A53B3 /* Theme.swift */,
@@ -540,6 +546,8 @@
 				03D5273652825B25C2F553A5 /* KeychainStore.swift in Sources */,
 				741685AD161B6210DD50A91F /* Models.swift in Sources */,
 				157EC19375B2FF8F781EC900 /* RouteMapView.swift in Sources */,
+				ABCDEF1234567890ABCDEF01 /* RoutesView.swift in Sources */,
+				ABCDEF1234567890ABCDEF03 /* RoutesCore.swift in Sources */,
 				F21E29704BF3DB287740DA93 /* Session.swift in Sources */,
 				B694A5D5B8BFE1A10222CC3D /* SettingsView.swift in Sources */,
 				9728FCF5BFD75018EDD71EE1 /* Theme.swift in Sources */,

@@ -15,6 +15,8 @@
 	</array>
 	<key>DreeveAppGroup</key>
 	<string>$(DREEVE_APP_GROUP_IDENTIFIER)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is used to find nearby running routes when you request them.</string>
 	<key>GoalCloudContainer</key>
 	<string></string>
 </dict>

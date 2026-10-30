@@ -126,6 +126,7 @@ struct SettingsView: View {
                         }
                     }
                 }
+                RouteProviderSettingsView()
                 GearImageSearchSettingsView()
                 if let notice {
                     Label(notice, systemImage: "checkmark.circle")
