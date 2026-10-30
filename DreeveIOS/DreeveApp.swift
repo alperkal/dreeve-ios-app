@@ -71,16 +71,16 @@ struct RootView: View {
                     GoalsView()
                         .tabItem { Label("Goals", systemImage: "target") }
                         .tag(2)
-                    GearView()
-                        .tabItem { Label("Gear", systemImage: "shoeprints.fill") }
-                        .tag(3)
+                    NavigationStack { RoutesView() }
+                        .tabItem { Label("Routes", systemImage: "map") }
+                        .tag(6)
                     HealthSyncView()
                         .tabItem { Label("Health sync", systemImage: "heart") }
                         .tag(4)
                         .badge(healthDiscovery.visibleEntries.count)
-                    RoutesView()
-                        .tabItem { Label("Routes", systemImage: "map") }
-                        .tag(6)
+                    GearView()
+                        .tabItem { Label("Gear", systemImage: "shoeprints.fill") }
+                        .tag(3)
                     NavigationStack { SettingsView() }
                         .tabItem { Label("Settings", systemImage: "gearshape") }
                         .tag(5)

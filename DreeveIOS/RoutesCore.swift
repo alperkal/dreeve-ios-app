@@ -12,6 +12,7 @@ struct MappedRoute: Identifiable {
     let name: String
     let type: String
     let segments: [[CLLocationCoordinate2D]]
+    let displaySegments: [[CLLocationCoordinate2D]]
     let distance: Double
     let incomplete: Bool
 
@@ -34,17 +35,69 @@ struct MappedRoute: Identifiable {
             }
             let type = element.tags?["route"] ?? "foot"
             return MappedRoute(id: element.id, name: element.tags?["name"] ?? "Unnamed \(type) route", type: type,
-                               segments: segments, distance: meters, incomplete: segments.count != ways.count || (element.members ?? []).contains { $0.type == "relation" })
+                               segments: segments, displaySegments: RouteDisplayGeometry.prepare(segments), distance: meters, incomplete: segments.count != ways.count || (element.members ?? []).contains { $0.type == "relation" })
         }
     }
 }
 
+/// Reduce MapKit overlay/vertex work without changing the measured route.
+enum RouteDisplayGeometry {
+    static func multiPolyline(_ segments: [[CLLocationCoordinate2D]]) -> MKMultiPolyline? {
+        let lines = segments.filter { $0.count >= 2 }.map { coordinates in
+            MKPolyline(coordinates: coordinates, count: coordinates.count)
+        }
+        return lines.isEmpty ? nil : MKMultiPolyline(lines)
+    }
+
+    static func prepare(_ segments: [[CLLocationCoordinate2D]], toleranceMeters: Double = 3) -> [[CLLocationCoordinate2D]] {
+        var joined: [[CLLocationCoordinate2D]] = []
+        for segment in segments where segment.count >= 2 {
+            if let last = joined.last?.last, let first = segment.first,
+               last.latitude == first.latitude && last.longitude == first.longitude {
+                joined[joined.count - 1].append(contentsOf: segment.dropFirst())
+            } else {
+                joined.append(segment)
+            }
+        }
+        return joined.map { simplify($0, toleranceMeters: toleranceMeters) }
+    }
+
+    private static func simplify(_ coordinates: [CLLocationCoordinate2D], toleranceMeters: Double) -> [CLLocationCoordinate2D] {
+        guard coordinates.count > 2, toleranceMeters > 0 else { return coordinates }
+        let points = coordinates.map(MKMapPoint.init)
+        // Avoid simplifying across the map projection's wrap at the antimeridian.
+        if zip(points, points.dropFirst()).contains(where: { abs($0.x - $1.x) > MKMapSize.world.width / 2 }) { return coordinates }
+        var keep = [Bool](repeating: false, count: points.count)
+        keep[0] = true; keep[points.count - 1] = true
+        var ranges: [(Int, Int)] = [(0, points.count - 1)]
+        while let (start, end) = ranges.popLast() {
+            guard end > start + 1 else { continue }
+            let a = points[start], b = points[end]
+            let dx = b.x - a.x, dy = b.y - a.y, lengthSquared = dx * dx + dy * dy
+            var greatest = 0.0, index = start
+            for i in (start + 1)..<end {
+                let p = points[i]
+                let t = lengthSquared == 0 ? 0 : max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared))
+                let x = p.x - (a.x + t * dx), y = p.y - (a.y + t * dy)
+                let meters = (x * x + y * y).squareRoot() * MKMetersPerMapPointAtLatitude(coordinates[i].latitude)
+                if meters > greatest { greatest = meters; index = i }
+            }
+            if greatest > toleranceMeters {
+                keep[index] = true
+                ranges.append((start, index)); ranges.append((index, end))
+            }
+        }
+        return coordinates.indices.compactMap { keep[$0] ? coordinates[$0] : nil }
+    }
+}
+
 enum RouteSearchError: LocalizedError {
-    case invalidLocation, invalidResponse, tooLarge, incompleteResponse, invalidEndpoint, missingKey
+    case invalidLocation, invalidResponse, tooLarge, incompleteResponse, invalidEndpoint, missingKey, noRouteTypes
     case serviceUnavailable(Int)
     var errorDescription: String? {
         switch self {
         case .invalidLocation: return "Choose a valid location on the map."
+        case .noRouteTypes: return "Select at least one route type."
         case .invalidEndpoint: return "Enter an HTTPS Overpass interpreter URL without credentials, query, or fragment."
         case .missingKey: return "Add an API key for this route provider in Settings."
         case .invalidResponse: return "The route service returned an unexpected response."
@@ -56,6 +109,12 @@ enum RouteSearchError: LocalizedError {
 }
 
 
+enum RouteType: String, CaseIterable, Identifiable, Sendable {
+    case running, foot, hiking
+    var id: String { rawValue }
+    var label: String { rawValue.capitalized }
+}
+
 enum RouteProviderAuth: String, CaseIterable, Identifiable {
     case none, bearer, apiKey
     var id: String { rawValue }
@@ -65,9 +124,12 @@ enum RouteProviderAuth: String, CaseIterable, Identifiable {
 }
 struct RouteProviderConfiguration: Equatable {
     static let defaultEndpoint = "https://overpass-api.de/api/interpreter"
+    static let defaultTimeout = 60
+    static func boundedTimeout(_ value: Int) -> Int { min(180, max(15, value)) }
     let endpoint: URL
     let auth: RouteProviderAuth
     let key: String?
+    var timeoutSeconds: Int = defaultTimeout
     static func validate(_ address: String) throws -> URL {
         let input = address.trimmingCharacters(in: .whitespacesAndNewlines)
         guard var parts = URLComponents(string: input), parts.scheme?.lowercased() == "https",
@@ -79,7 +141,7 @@ struct RouteProviderConfiguration: Equatable {
     }
     func request(query: String) throws -> URLRequest {
         var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"; request.timeoutInterval = 30
+        request.httpMethod = "POST"; request.timeoutInterval = TimeInterval(Self.boundedTimeout(timeoutSeconds))
         request.setValue("Dreeve-iOS/1.0 (nearby route search)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/x-www-form-urlencoded; charset=utf-8", forHTTPHeaderField: "Content-Type")
         if auth != .none {
@@ -113,10 +175,18 @@ actor NearbyRouteService {
             session = URLSession(configuration: config, delegate: RouteRedirectGuard(), delegateQueue: nil)
         }
     }
+    static func query(latitude: Double, longitude: Double, types: Set<RouteType>, timeoutSeconds: Int = RouteProviderConfiguration.defaultTimeout) throws -> String {
+        let selected = RouteType.allCases.filter { types.contains($0) }.map(\.rawValue)
+        guard !selected.isEmpty else { throw RouteSearchError.noRouteTypes }
+        let filter = "^(" + selected.joined(separator: "|") + ")$"
+        return String(format: "[out:json][timeout:%d];rel[\"type\"=\"route\"][\"route\"~\"%@\"](around:4000,%.5f,%.5f);out geom;", locale: Locale(identifier: "en_US_POSIX"), RouteProviderConfiguration.boundedTimeout(timeoutSeconds), filter, latitude, longitude)
+    }
     private var lastRequest: Date?
-    func search(latitude: Double, longitude: Double, provider: RouteProviderConfiguration) async throws -> [MappedRoute] {
+    func search(latitude: Double, longitude: Double, types: Set<RouteType>, provider: RouteProviderConfiguration) async throws -> [MappedRoute] {
         guard latitude.isFinite, longitude.isFinite, abs(latitude) <= 90, abs(longitude) <= 180 else { throw RouteSearchError.invalidLocation }
-        let key = String(format: "%.3f,%.3f", latitude, longitude)
+        guard !types.isEmpty else { throw RouteSearchError.noRouteTypes }
+        let typeKey = RouteType.allCases.filter { types.contains($0) }.map(\.rawValue).joined(separator: ",")
+        let key = String(format: "%.3f,%.3f", latitude, longitude) + ":" + typeKey
         if let cached, cached.key == key, cached.provider == provider, Date.now.timeIntervalSince(cached.time) < 300 { return cached.routes }
         if let lastRequest {
             let delay = 2 - Date.now.timeIntervalSince(lastRequest)
@@ -124,9 +194,20 @@ actor NearbyRouteService {
         }
         try Task.checkCancellation()
         lastRequest = .now
-        let query = String(format: "[out:json][timeout:20];rel[\"type\"=\"route\"][\"route\"~\"^(running|foot|hiking)$\"](around:3000,%.5f,%.5f);out geom;", locale: Locale(identifier: "en_US_POSIX"), latitude, longitude)
+        let query = try Self.query(latitude: latitude, longitude: longitude, types: types, timeoutSeconds: provider.timeoutSeconds)
         let request = try provider.request(query: query)
-        let (data, response) = try await session.data(for: request)
+        let timeout = RouteProviderConfiguration.boundedTimeout(provider.timeoutSeconds)
+        let session = self.session
+        let (data, response) = try await withThrowingTaskGroup(of: (Data, URLResponse).self) { group in
+            group.addTask { try await session.data(for: request) }
+            group.addTask {
+                try await Task.sleep(for: .seconds(timeout))
+                throw URLError(.timedOut)
+            }
+            defer { group.cancelAll() }
+            guard let result = try await group.next() else { throw CancellationError() }
+            return result
+        }
         guard let http = response as? HTTPURLResponse else { throw RouteSearchError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else { throw RouteSearchError.serviceUnavailable(http.statusCode) }
         guard data.count <= 5_000_000 else { throw RouteSearchError.tooLarge }

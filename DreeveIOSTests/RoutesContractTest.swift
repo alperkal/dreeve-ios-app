@@ -32,6 +32,16 @@ final class RouteMockProtocol: URLProtocol {
         precondition(routes[0].segments.count == 2 && routes[0].incomplete)
         precondition(routes[0].distance > 1000 && routes[0].distance < 2000) // no false connection between ways
         precondition(routes[1].name == "Unnamed foot route" && !routes[1].incomplete)
+        let line = (0...100).map { CLLocationCoordinate2D(latitude: 44.5, longitude: 11.3 + Double($0) * 0.00001) }
+        let separate = [CLLocationCoordinate2D(latitude: 44.6, longitude: 11.4), CLLocationCoordinate2D(latitude: 44.61, longitude: 11.4)]
+        let displayed = RouteDisplayGeometry.prepare([Array(line[0...50]), Array(line[50...100]), separate])
+        precondition(displayed.count == 2 && displayed[0].count == 2 && displayed[1].count == 2)
+        let grouped = RouteDisplayGeometry.multiPolyline(displayed)
+        precondition(grouped?.polylines.count == 2 && RouteDisplayGeometry.multiPolyline([]) == nil)
+        precondition(displayed[0].first!.longitude == line.first!.longitude && displayed[0].last!.longitude == line.last!.longitude)
+        let corner = [CLLocationCoordinate2D(latitude: 44.5, longitude: 11.3), CLLocationCoordinate2D(latitude: 44.501, longitude: 11.301), CLLocationCoordinate2D(latitude: 44.5, longitude: 11.302)]
+        precondition(RouteDisplayGeometry.prepare([corner])[0].count == 3)
+        precondition(routes[0].segments.count == 2 && routes[0].displaySegments.count == 2)
         let empty = try MappedRoute.decode(Data("{\"elements\":[]}".utf8))
         precondition(empty.isEmpty)
         do { _ = try MappedRoute.decode(Data("{\"elements\":[],\"remark\":\"runtime error\"}".utf8)); preconditionFailure("Incomplete result accepted") }
@@ -60,14 +70,29 @@ final class RouteMockProtocol: URLProtocol {
         let mockConfig = URLSessionConfiguration.ephemeral
         mockConfig.protocolClasses = [RouteMockProtocol.self]
         let service = NearbyRouteService(session: URLSession(configuration: mockConfig))
-        _ = try await service.search(latitude: 48.2, longitude: 16.3, provider: bearer)
-        _ = try await service.search(latitude: 48.2, longitude: 16.3, provider: bearer)
+        _ = try await service.search(latitude: 48.2, longitude: 16.3, types: [.running], provider: bearer)
+        _ = try await service.search(latitude: 48.2, longitude: 16.3, types: [.running], provider: bearer)
         precondition(RouteMockProtocol.requests.count == 1) // same-provider cache
+        let query = try NearbyRouteService.query(latitude: 48.2, longitude: 16.3, types: [.running], timeoutSeconds: 90)
+        precondition(query.contains("around:4000,48.20000,16.30000") && query.contains("[timeout:90]"))
+        precondition(query.contains("[\"route\"~\"^(running)$\"]") && !query.contains("hiking") && !query.contains("foot"))
+        let allQuery = try NearbyRouteService.query(latitude: 44.4949, longitude: 11.3426, types: [.running, .foot, .hiking])
+        precondition(allQuery.contains("^(running|foot|hiking)$"))
+        let walkingQuery = try NearbyRouteService.query(latitude: 48.2, longitude: 16.3, types: [.foot, .hiking])
+        precondition(walkingQuery.contains("^(foot|hiking)$") && !walkingQuery.contains("running"))
+        do { _ = try NearbyRouteService.query(latitude: 48.2, longitude: 16.3, types: []); preconditionFailure("Empty selection accepted") }
+        catch RouteSearchError.noRouteTypes {}
+        _ = try await service.search(latitude: 48.2, longitude: 16.3, types: [.foot], provider: bearer)
+        precondition(RouteMockProtocol.requests.count == 2) // filters do not reuse cached running results
+        let slowProvider = RouteProviderConfiguration(endpoint: endpoint, auth: .none, key: nil, timeoutSeconds: 90)
+        let slowRequest = try slowProvider.request(query: query)
+        precondition(slowRequest.timeoutInterval == 90)
+        precondition(RouteProviderConfiguration.boundedTimeout(0) == 15 && RouteProviderConfiguration.boundedTimeout(999) == 180)
         let otherEndpoint = try RouteProviderConfiguration.validate("https://other.test/interpreter")
         let other = RouteProviderConfiguration(endpoint: otherEndpoint, auth: .none, key: nil)
-        _ = try await service.search(latitude: 48.2, longitude: 16.3, provider: other)
-        precondition(RouteMockProtocol.requests.count == 2)
-        precondition(RouteMockProtocol.requests[1].url == otherEndpoint && RouteMockProtocol.requests[1].value(forHTTPHeaderField: "Authorization") == nil)
+        _ = try await service.search(latitude: 48.2, longitude: 16.3, types: [.running], provider: other)
+        precondition(RouteMockProtocol.requests.count == 3)
+        precondition(RouteMockProtocol.requests[2].url == otherEndpoint && RouteMockProtocol.requests[2].value(forHTTPHeaderField: "Authorization") == nil)
         let guardDelegate = RouteRedirectGuard()
         let redirectSession = URLSession(configuration: .ephemeral)
         let redirectResponse = HTTPURLResponse(url: endpoint, statusCode: 302, httpVersion: nil, headerFields: nil)!
