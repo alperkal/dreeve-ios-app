@@ -2,7 +2,7 @@
 
 Read this before exploring the implementation. This is a repository-owned handoff, not a chat transcript. It explains current behavior and why the boundaries exist, so another agent can start with the relevant files instead of rediscovering the whole app.
 
-Reviewed 2026-10-25. Baseline release: `v0.6.0` (`e0c23b2`); the Watch companion additions are documented alongside their implementation. Sources: the original “Create Dreeve iOS App” conversation, subsequent feature/fix discussions, README, current source, tests and workflows. Historical proposals are superseded by the implemented behavior below. Verify the current checkout before acting; update this document when architecture or product decisions change.
+Reviewed 2026-10-30. Baseline release: `v0.6.0` (`e0c23b2`); the Watch companion additions are documented alongside their implementation. Sources: the original “Create Dreeve iOS App” conversation, subsequent feature/fix discussions, README, current source, tests and workflows. Historical proposals are superseded by the implemented behavior below. Verify the current checkout before acting; update this document when architecture or product decisions change.
 
 ## Purpose and product boundaries
 
@@ -43,9 +43,11 @@ A native, personal iPhone companion for a self-hosted Dreeve activity server: br
 | `Shared/GoalWatchData.swift`, `DreeveIOS/PhoneGoalWatchBridge.swift` | Ordered/versioned credential-free Watch envelopes, atomic storage, scoped selection/deep links and iPhone Watch Connectivity sender. |
 | `DreeveWatch/`, `DreeveWatchWidgets/` | Watch companion/receiver/details and configurable corner/circular complications; no direct Dreeve API or HealthKit access. |
 | `DreeveWidgets/` | WidgetKit views, goal-selection App Intent, timelines and extension configuration. No authenticated networking or SwiftData store here. |
+| `DreeveIOS/Theme.swift` | Shared design tokens: navy/lime palette, corner radius, card/button styles used across all UI targets. Never hardcode palette or radius values in view files. |
 | `DreeveIOS/KeychainStore.swift`, `SettingsView.swift` | Secure API-token persistence, connection/capability settings and user-configured image-search endpoint. |
 | `DreeveIOSTests/`, `run_tests.sh` | Portable standalone Swift contract executables, not an XCTest target. |
 | `scripts/`, `.github/workflows/` | Local/CI tests, unsigned simulator/device builds, packaging and tag-triggered releases. |
+| `create_project.py` | Historical project-generator script used during initial app creation. Not part of the build or CI pipeline; do not run or modify it. |
 | `docs/screenshots/`, `docs/social-preview.png`, `Branding/` | Documentation screenshots, social preview and icon source assets. Screenshots use synthetic data. |
 
 ## Authorities, persistence and privacy
@@ -182,6 +184,7 @@ Change-to-test routing:
 | Photo URLs/auth/error handling | `ActivityPhotoContractTest.swift` |
 | Geometry/share export | `ShareCardContractTest.swift` |
 | Training brief/privacy/fallback | `CoachContractTest.swift` |
+| Nearby routes/Overpass search, geometry | `RoutesContractTest.swift` |
 
 All test names above are relative to `DreeveIOSTests/`.
 
