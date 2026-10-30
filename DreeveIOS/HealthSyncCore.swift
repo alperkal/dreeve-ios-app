@@ -187,7 +187,7 @@ extension HealthSyncRecord {
             elapsedTimeInSeconds: Int(workout.end.timeIntervalSince(workout.start)), averageSpeedInKmPerHour: nil,
             maxSpeedInKmPerHour: nil, calories: workout.calories.map { Int($0.rounded()) }, averageHeartRate: nil,
             maxHeartRate: nil, averagePower: nil, averageCadence: nil, gearId: nil, location: nil,
-            startLatLng: preview?.route.first, encodedPolyline: nil, hasGpx: nil, images: nil)
+            startLatLng: preview?.route.first, encodedPolyline: nil, images: nil)
     }
 }
 

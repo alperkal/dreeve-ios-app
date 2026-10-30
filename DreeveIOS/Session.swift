@@ -442,11 +442,6 @@ final class DreeveSession: ObservableObject {
         return try await client.gear()
     }
 
-    func gpx(_ id: String) async throws -> URL {
-        guard let client else { throw APIError.notConfigured }
-        return try await client.downloadGPX(id)
-    }
-
     func attachImage(_ id: String, data: Data) async throws {
         guard let client else { throw APIError.notConfigured }
         _ = try await client.uploadImage(id, imageData: data)

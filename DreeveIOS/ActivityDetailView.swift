@@ -24,7 +24,6 @@ struct ActivityDetailView: View {
     @State private var confirmDelete = false
     @State private var isBusy = false
     @State private var errorMessage: String?
-    @State private var gpxFile: URL?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var showingShareCardSheet = false
     @State private var activityWebPage: ActivityWebPage?
@@ -150,22 +149,6 @@ struct ActivityDetailView: View {
                         }
                         .buttonStyle(.bordered)
                         .disabled(showingSavedActivity || isBusy || !session.canUpload)
-                        if !showingSavedActivity && activity.hasGpx == true {
-                            if let gpxFile {
-                                ShareLink(item: gpxFile) { Label("Share GPX", systemImage: "square.and.arrow.up") }
-                                    .buttonStyle(.bordered)
-                            } else {
-                                Button("Prepare GPX") {
-                                    Task {
-                                        isBusy = true
-                                        defer { isBusy = false }
-                                        do { gpxFile = try await session.gpx(activityID) }
-                                        catch { errorMessage = error.localizedDescription }
-                                    }
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
                     }
                     .tint(DreeveTheme.accent)
                     if !session.canUpload && !showingSavedActivity {

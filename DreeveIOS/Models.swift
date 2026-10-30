@@ -50,7 +50,6 @@ struct DreeveActivity: Identifiable, Codable, Sendable {
     let location: ActivityLocation?
     let startLatLng: [Double]?
     let encodedPolyline: String?
-    let hasGpx: Bool?
     let images: [ActivityImage]?
 
     var startDate: Date? {

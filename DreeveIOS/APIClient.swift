@@ -172,7 +172,7 @@ struct DreeveAPIClient: Sendable {
 
     func uploadActivity(fileURL: URL) async throws -> UploadReceipt {
         let ext = fileURL.pathExtension.lowercased()
-        guard ["fit", "tcx", "gpx"].contains(ext) else { throw APIError.unsupportedFile }
+        guard ["fit", "tcx"].contains(ext) else { throw APIError.unsupportedFile }
         let access = fileURL.startAccessingSecurityScopedResource()
         defer { if access { fileURL.stopAccessingSecurityScopedResource() } }
         let data = try Data(contentsOf: fileURL)
@@ -180,7 +180,7 @@ struct DreeveAPIClient: Sendable {
     }
 
     func uploadActivity(data: Data, filename: String) async throws -> UploadReceipt {
-        guard ["fit", "tcx", "gpx"].contains(URL(fileURLWithPath: filename).pathExtension.lowercased()) else { throw APIError.unsupportedFile }
+        guard ["fit", "tcx"].contains(URL(fileURLWithPath: filename).pathExtension.lowercased()) else { throw APIError.unsupportedFile }
         return try await upload(path: "activity/upload", data: data, filename: filename, mime: "application/octet-stream")
     }
 
@@ -240,16 +240,6 @@ struct DreeveAPIClient: Sendable {
         return data
     }
 
-    func downloadGPX(_ id: String) async throws -> URL {
-        var request = URLRequest(url: try endpoint("activities/\(safeSegment(id))/gpx"))
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, response) = try await urlSession.data(for: request)
-        try check(response, data: data)
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("dreeve-\(safeFilename(id)).gpx")
-        try data.write(to: url, options: .atomic)
-        return url
-    }
-
     func uploadImage(_ id: String, imageData: Data) async throws -> ActivityImage {
         try await upload(path: "activities/\(safeSegment(id))/images", data: imageData, filename: "photo.jpg", mime: "image/jpeg")
     }
@@ -297,7 +287,7 @@ enum APIError: LocalizedError {
         case .unexpectedResponse: return "Unexpected server response."
         case .http(let code, let message): return "Server returned \(code): \(message)"
         case .decoding(let info): return "Unexpected data from Dreeve: \(info)"
-        case .unsupportedFile: return "Choose a .fit, .tcx or .gpx activity file."
+        case .unsupportedFile: return "Choose a .fit or .tcx activity file."
         case .notConfigured: return "Connect your Dreeve instance in Settings first."
         }
     }

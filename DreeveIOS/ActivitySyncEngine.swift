@@ -122,6 +122,6 @@ extension ActivitySummaryRecord {
             distanceInMeter: distanceMeters, elevationInMeter: elevationGainMeters, movingTimeInSeconds: movingTimeSeconds,
             elapsedTimeInSeconds: elapsedTimeSeconds, averageSpeedInKmPerHour: nil, maxSpeedInKmPerHour: nil, calories: nil,
             averageHeartRate: nil, maxHeartRate: nil, averagePower: nil, averageCadence: nil, gearId: gearId,
-            location: nil, startLatLng: nil, encodedPolyline: encodedPolyline, hasGpx: nil, images: nil)
+            location: nil, startLatLng: nil, encodedPolyline: encodedPolyline, images: nil)
     }
 }

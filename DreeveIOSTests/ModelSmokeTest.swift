@@ -10,7 +10,7 @@ let payload = """
     "sportType": "Run", "startDateLocal": "2026-10-10T18:00:00",
     "distanceInMeter": 10000, "movingTimeInSeconds": 3000,
     "elevationInMeter": 123, "location": {"city": "Vienna", "state": null, "countryCode": "at"},
-    "startLatLng": [48.2, 16.3], "hasGpx": true
+    "startLatLng": [48.2, 16.3]
   }],
   "pagination": {"page": 1, "size": 25, "total": 1, "totalPages": 1}
 }
