@@ -7,6 +7,7 @@ struct DashboardView: View {
     @EnvironmentObject private var persistence: GoalPersistence
 
     private var insights: ActivityInsights { ActivityInsights(activities: session.insightsActivities) }
+    private var monthDistance: CalendarMonthDistance { CalendarMonthDistance(activities: session.calendarMonthActivities) }
 
     var body: some View {
         NavigationStack {
@@ -43,47 +44,16 @@ struct DashboardView: View {
                         MetricView(title: "30-day climb", value: "\(Int(insights.monthElevation)) m", symbol: "mountain.2")
                     }
 
-                    SurfaceCard {
-                        VStack(alignment: .leading, spacing: 13) {
-                            HStack(alignment: .firstTextBaseline) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("DISTANCE TREND")
-                                        .font(.caption.weight(.semibold))
-                                        .tracking(1.5)
-                                        .foregroundStyle(DreeveTheme.muted)
-                                    Text("Last 7 days")
-                                        .font(.headline)
-                                }
-                                Spacer()
-                                Text("\(insights.weekKm.oneDecimal) km")
-                                    .foregroundStyle(DreeveTheme.accent)
-                                    .font(.headline.monospacedDigit())
-                            }
-                            Chart {
-                                ForEach(insights.dailyDistances) { point in
-                                    BarMark(
-                                        x: .value("Day", point.day, unit: .day),
-                                        y: .value("Distance", point.km)
-                                    )
-                                    .foregroundStyle(DreeveTheme.accent.gradient)
-                                    .cornerRadius(5)
-                                }
-                            }
-                            .chartYAxis {
-                                AxisMarks(position: .leading) {
-                                    AxisGridLine()
-                                    AxisTick()
-                                    AxisValueLabel(anchor: .trailing)
-                                }
-                            }
-                            .chartXAxis {
-                                AxisMarks(values: .stride(by: .day)) { _ in
-                                    AxisValueLabel(format: .dateTime.weekday(.narrow), anchor: .top)
-                                }
-                            }
-                            .frame(height: 150)
-                        }
+                    TabView {
+                        DistanceTrendCard(title: "Last 7 days", total: insights.weekKm,
+                                          points: insights.dailyDistances, monthly: false)
+                            .tag(0)
+                        DistanceTrendCard(title: "This month", total: monthDistance.total,
+                                          points: monthDistance.daily, monthly: true)
+                            .tag(1)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .always))
+                    .frame(height: 250)
 
                     SurfaceCard {
                         VStack(alignment: .leading, spacing: 15) {
@@ -160,5 +130,51 @@ struct DashboardView: View {
                 Text(session.errorMessage ?? "Unknown error")
             }
         }
+    }
+}
+
+private struct DistanceTrendCard: View {
+    let title: String
+    let total: Double
+    let points: [DailyDistance]
+    let monthly: Bool
+
+    var body: some View {
+        SurfaceCard {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("DISTANCE TREND").font(.caption.weight(.semibold)).tracking(1.5).foregroundStyle(DreeveTheme.muted)
+                        Text(title).font(.headline)
+                    }
+                    Spacer()
+                    Text("\(total.oneDecimal) km").foregroundStyle(DreeveTheme.accent).font(.headline.monospacedDigit())
+                }
+                Chart {
+                    ForEach(points) { point in
+                        BarMark(x: .value("Day", point.day, unit: .day), y: .value("Distance", point.km))
+                            .foregroundStyle(DreeveTheme.accent.gradient).cornerRadius(monthly ? 2 : 5)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { AxisGridLine(); AxisTick(); AxisValueLabel(anchor: .trailing) }
+                }
+                .chartXAxis {
+                    if monthly {
+                        AxisMarks(values: .stride(by: .day, count: 5)) { _ in
+                            AxisValueLabel(format: .dateTime.day(), anchor: .top)
+                        }
+                    } else {
+                        AxisMarks(values: .stride(by: .day)) { _ in
+                            AxisValueLabel(format: .dateTime.weekday(.narrow), anchor: .top)
+                        }
+                    }
+                }
+                .frame(height: 150)
+            }
+            .padding(.bottom, 16)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(title) distance trend, \(total.oneDecimal) kilometers")
     }
 }

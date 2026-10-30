@@ -31,4 +31,19 @@ precondition(sportOptions.count == Set(sportOptions).count)
 precondition(sportOptions == sportOptions.sorted())
 precondition(ActivitySportTypes.options(including: "FutureServerSport").contains("FutureServerSport"))
 precondition(!ActivitySportTypes.options(including: "").contains(""))
+let monthPayload = """
+{"activities":[
+  {"id":"last", "name":"Last month", "sportType":"Run", "startDateLocal":"2026-09-30T12:00:00", "distanceInMeter":20000},
+  {"id":"first", "name":"First", "sportType":"Run", "startDateLocal":"2026-10-01T12:00:00", "distanceInMeter":5000},
+  {"id":"latest", "name":"Latest", "sportType":"Run", "startDateLocal":"2026-10-31T10:00:00", "distanceInMeter":3000},
+  {"id":"next", "name":"Next month", "sportType":"Run", "startDateLocal":"2026-11-01T12:00:00", "distanceInMeter":10000}
+], "pagination":{"page":1,"size":100,"total":4,"totalPages":1}}
+"""
+let monthActivities = try JSONDecoder().decode(ActivityPage.self, from: Data(monthPayload.utf8)).activities
+let october = CalendarMonthDistance(activities: monthActivities, now: ActivityDates.local.date(from: "2026-10-31T15:00:00")!)
+precondition(october.daily.count == 31 && october.daily.first?.km == 5 && october.daily.last?.km == 3 && october.total == 8)
+let firstDay = CalendarMonthDistance(activities: monthActivities, now: ActivityDates.local.date(from: "2026-10-01T15:00:00")!)
+precondition(firstDay.daily.count == 1 && firstDay.total == 5)
+let february = CalendarMonthDistance(activities: [], now: ActivityDates.local.date(from: "2028-02-29T12:00:00")!)
+precondition(february.daily.count == 29 && february.total == 0)
 print("Dreeve model smoke test passed")

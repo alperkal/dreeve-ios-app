@@ -216,6 +216,27 @@ struct ActivityInsights {
     }
 }
 
+/// Current calendar month through today, using activity-local wall dates.
+struct CalendarMonthDistance {
+    let daily: [DailyDistance]
+    var total: Double { daily.reduce(0) { $0 + $1.km } }
+    init(activities: [DreeveActivity], now: Date = .now, calendar: Calendar = .current) {
+        let today = calendar.startOfDay(for: now)
+        guard let start = calendar.dateInterval(of: .month, for: today)?.start,
+              let count = calendar.dateComponents([.day], from: start, to: today).day else { daily = []; return }
+        let buckets = Dictionary(grouping: activities.compactMap { activity -> (Date, Double)? in
+            guard let date = activity.startDate else { return nil }
+            let day = calendar.startOfDay(for: date)
+            guard day >= start && day <= today else { return nil }
+            return (day, activity.distanceKilometers)
+        }, by: { $0.0 })
+        daily = (0...count).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
+            return DailyDistance(day: day, km: (buckets[day] ?? []).reduce(0) { $0 + $1.1 })
+        }
+    }
+}
+
 extension Double {
     var oneDecimal: String { formatted(.number.precision(.fractionLength(1))) }
 }

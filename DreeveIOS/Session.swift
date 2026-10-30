@@ -9,6 +9,7 @@ final class DreeveSession: ObservableObject {
     @Published private(set) var canUpload: Bool = false
     @Published private(set) var activities: [DreeveActivity] = []
     @Published private(set) var insightsActivities: [DreeveActivity] = []
+    @Published private(set) var calendarMonthActivities: [DreeveActivity] = []
     @Published private(set) var hasMore = true
     @Published private(set) var isLoadingActivities = false
     @Published private(set) var isLoadingInsights = false
@@ -83,6 +84,7 @@ final class DreeveSession: ObservableObject {
         canUpload = status.canUpload
         activities = []
         insightsActivities = []
+        calendarMonthActivities = []
         page = 0
         hasMore = true
         didLoadInsights = false
@@ -100,6 +102,7 @@ final class DreeveSession: ObservableObject {
         isConfigured = false
         activities = []
         insightsActivities = []
+        calendarMonthActivities = []
         page = 0
         hasMore = true
         didLoadInsights = false
@@ -194,6 +197,7 @@ final class DreeveSession: ObservableObject {
             let currentRevision = await store.mutationRevision(instanceHash: scope)
             guard generation == connectionGeneration, revision == currentRevision else { return }
             insightsActivities = records.filter { $0.localDayKey >= insightStart && $0.localDayKey <= today }.map(\.activity)
+            calendarMonthActivities = records.filter { $0.localDayKey >= month.start && $0.localDayKey <= today }.map(\.activity)
             didLoadInsights = true
             if let refreshed {
                 lastActivitySync = refreshed
@@ -318,6 +322,7 @@ final class DreeveSession: ObservableObject {
         activityIndexRevision += 1
         if let i = activities.firstIndex(where: { $0.id == id }) { activities[i] = changed }
         if let i = insightsActivities.firstIndex(where: { $0.id == id }) { insightsActivities[i] = changed }
+        if let i = calendarMonthActivities.firstIndex(where: { $0.id == id }) { calendarMonthActivities[i] = changed }
         goalProgress.changed(changed)
         if indexed { await loadCachedActivityIndex() }
         return changed
@@ -339,6 +344,7 @@ final class DreeveSession: ObservableObject {
         activityIndexRevision += 1
         activities.removeAll { $0.id == id }
         insightsActivities.removeAll { $0.id == id }
+        calendarMonthActivities.removeAll { $0.id == id }
         goalProgress.changed(deletedID: id)
         if indexed { await loadCachedActivityIndex() }
     }

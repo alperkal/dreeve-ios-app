@@ -90,6 +90,7 @@ Approved Health upload -> server queue -> poll final import result -> index reco
 - Connection generations reject responses from an old connection. Mutation revisions prevent a scan from resurrecting an activity edited/deleted while that scan was in flight; retry the invalidated scan as implemented.
 - Failed refreshes preserve saved values. Incomplete pagination must not replace a complete snapshot or prove records were deleted.
 - Ordinary opens and both new/legacy goal widget links open Overview. Returning from background resets the selected tab to Overview; widget links must not select Goals.
+- Overview’s distance trend is a swipeable chart: last seven days by default and current calendar month through today on the second page. `calendarMonthActivities` includes the first day on 31-day months separately from the last-30-days insights; both come from the local activity index.
 - Overview shows its connection warning once at the top. Favorite rows suppress repeated stale warnings, and their section warning is hidden when the top status is present. Standalone Goals retains its warnings and the neutral progress timestamp remains visible.
 
 ## Goals, dates and streaks: preserve these semantics
