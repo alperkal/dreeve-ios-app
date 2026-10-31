@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var session: DreeveSession
+    @AppStorage("overview.distanceTrendSport") private var distanceTrendSport = DistanceTrendSport.running.rawValue
     @EnvironmentObject private var watchBridge: PhoneGoalWatchBridge
     @State private var url = ""
     @State private var key = ""
@@ -124,6 +125,18 @@ struct SettingsView: View {
                                 .font(.caption)
                                 .foregroundStyle(DreeveTheme.muted)
                         }
+                    }
+                }
+                SurfaceCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Distance trend", systemImage: "chart.bar").font(.headline)
+                        Text("Choose which activity appears in the weekly, monthly and yearly distance charts.")
+                            .font(.caption).foregroundStyle(DreeveTheme.muted)
+                        Picker("Distance trend activity", selection: $distanceTrendSport) {
+                            ForEach(DistanceTrendSport.allCases) { sport in
+                                Text(sport.label).tag(sport.rawValue)
+                            }
+                        }.pickerStyle(.segmented)
                     }
                 }
                 RouteProviderSettingsView()

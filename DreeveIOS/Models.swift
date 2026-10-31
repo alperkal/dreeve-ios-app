@@ -134,13 +134,45 @@ struct DreeveImport: Decodable, Identifiable {
 }
 
 struct GearPage: Decodable { let gear: [DreeveGear] }
-struct DreeveGear: Identifiable, Decodable {
+struct DreeveGear: Identifiable, Codable {
     let id: String
     let name: String
     let type: String
     let isRetired: Bool?
     let distanceInMeter: Double?
     let numberOfActivities: Int?
+}
+
+/// Local, instance-scoped inventory. Gear pictures are stored separately.
+struct GearInventoryCache {
+    let directory: URL
+    init(directory: URL = URL.applicationSupportDirectory.appendingPathComponent("GearInventory", isDirectory: true)) {
+        self.directory = directory
+    }
+    private func fileURL(instanceID: String) throws -> URL {
+        guard instanceID.count == 64, instanceID.allSatisfy({ $0.isHexDigit && $0.isASCII }) else {
+            throw CocoaError(.fileReadInvalidFileName)
+        }
+        return directory.appendingPathComponent(instanceID + ".json")
+    }
+    func load(instanceID: String) throws -> [DreeveGear]? {
+        let url = try fileURL(instanceID: instanceID)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return try JSONDecoder().decode([DreeveGear].self, from: Data(contentsOf: url))
+    }
+    func save(_ gear: [DreeveGear], instanceID: String) throws {
+        let url = try fileURL(instanceID: instanceID)
+        let data = try JSONEncoder().encode(gear)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        var root = directory
+        var values = URLResourceValues(); values.isExcludedFromBackup = true
+        try? root.setResourceValues(values)
+        #if os(iOS)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
+    }
 }
 
 struct WeightPage: Decodable { let weights: [DreeveWeight] }
@@ -215,16 +247,50 @@ struct ActivityInsights {
     }
 }
 
+/// The user's chosen sport applies only to the Overview distance trend.
+enum DistanceTrendSport: String, CaseIterable, Identifiable {
+    case running = "Run"
+    case swimming = "Swim"
+    var id: String { rawValue }
+    var label: String { self == .running ? "Running" : "Swimming" }
+    func matches(_ activity: DreeveActivity) -> Bool {
+        switch self {
+        case .running: return SportFamily.canonical(activity.sportType) == "Run"
+        case .swimming: return activity.sportType == "Swim" || activity.sportType == "OpenWaterSwim"
+        }
+    }
+}
+
+/// The previous six calendar days and today, using activity-local wall dates.
+struct LastSevenDaysDistance {
+    let daily: [DailyDistance]
+    var total: Double { daily.reduce(0) { $0 + $1.km } }
+    init(activities: [DreeveActivity], sport: DistanceTrendSport, now: Date = .now, calendar: Calendar = .current) {
+        let today = calendar.startOfDay(for: now)
+        guard let start = calendar.date(byAdding: .day, value: -6, to: today) else { daily = []; return }
+        let buckets = Dictionary(grouping: activities.compactMap { activity -> (Date, Double)? in
+            guard sport.matches(activity), let date = activity.startDate else { return nil }
+            let day = calendar.startOfDay(for: date)
+            guard day >= start && day <= today else { return nil }
+            return (day, activity.distanceKilometers)
+        }, by: { $0.0 })
+        daily = (0..<7).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
+            return DailyDistance(day: day, km: (buckets[day] ?? []).reduce(0) { $0 + $1.1 })
+        }
+    }
+}
+
 /// Current calendar month through today, using activity-local wall dates.
 struct CalendarMonthDistance {
     let daily: [DailyDistance]
     var total: Double { daily.reduce(0) { $0 + $1.km } }
-    init(activities: [DreeveActivity], now: Date = .now, calendar: Calendar = .current) {
+    init(activities: [DreeveActivity], sport: DistanceTrendSport = .running, now: Date = .now, calendar: Calendar = .current) {
         let today = calendar.startOfDay(for: now)
         guard let start = calendar.dateInterval(of: .month, for: today)?.start,
               let count = calendar.dateComponents([.day], from: start, to: today).day else { daily = []; return }
         let buckets = Dictionary(grouping: activities.compactMap { activity -> (Date, Double)? in
-            guard let date = activity.startDate else { return nil }
+            guard sport.matches(activity), let date = activity.startDate else { return nil }
             let day = calendar.startOfDay(for: date)
             guard day >= start && day <= today else { return nil }
             return (day, activity.distanceKilometers)
@@ -232,6 +298,29 @@ struct CalendarMonthDistance {
         daily = (0...count).compactMap { offset in
             guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
             return DailyDistance(day: day, km: (buckets[day] ?? []).reduce(0) { $0 + $1.1 })
+        }
+    }
+}
+
+/// Current calendar year through this month, grouped by local calendar month.
+struct CalendarYearDistance {
+    let monthly: [DailyDistance]
+    var total: Double { monthly.reduce(0) { $0 + $1.km } }
+    init(activities: [DreeveActivity], sport: DistanceTrendSport, now: Date = .now, calendar: Calendar = .current) {
+        let today = calendar.startOfDay(for: now)
+        guard let year = calendar.dateInterval(of: .year, for: today)?.start,
+              let currentMonth = calendar.dateInterval(of: .month, for: today)?.start,
+              let count = calendar.dateComponents([.month], from: year, to: currentMonth).month else { monthly = []; return }
+        let buckets = Dictionary(grouping: activities.compactMap { activity -> (Date, Double)? in
+            guard sport.matches(activity), let date = activity.startDate else { return nil }
+            let day = calendar.startOfDay(for: date)
+            guard day >= year && day <= today,
+                  let month = calendar.dateInterval(of: .month, for: day)?.start else { return nil }
+            return (month, activity.distanceKilometers)
+        }, by: { $0.0 })
+        monthly = (0...count).compactMap { offset in
+            guard let month = calendar.date(byAdding: .month, value: offset, to: year) else { return nil }
+            return DailyDistance(day: month, km: (buckets[month] ?? []).reduce(0) { $0 + $1.1 })
         }
     }
 }

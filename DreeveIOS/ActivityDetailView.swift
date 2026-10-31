@@ -64,7 +64,8 @@ struct ActivityDetailView: View {
                                 if let item = gear.first(where: { $0.id == id }) {
                                     GearSummaryView(gear: item)
                                 } else {
-                                    Text("Assigned gear: \(id)")
+                                    Text("Gear details unavailable")
+                                    GearThumbnail(gearID: id)
                                     if loadingGear { ProgressView("Loading gear…") }
                                     else if gearError == nil && !showingSavedActivity {
                                         Text("This gear is no longer in the inventory.").font(.caption)
@@ -245,6 +246,7 @@ struct ActivityDetailView: View {
         loadFailure = nil
         defer { isLoadingActivity = false }
         if activity == nil { activity = await session.cachedActivity(activityID) }
+        gear = session.cachedGear() ?? []
         do {
             activity = try await session.getActivity(activityID)
             showingSavedActivity = false
@@ -265,6 +267,7 @@ struct ActivityDetailView: View {
         loadingGear = true
         gearError = nil
         defer { loadingGear = false }
+        if let savedGear = session.cachedGear() { gear = savedGear }
         do { gear = try await session.gear() }
         catch { gearError = error.localizedDescription }
     }

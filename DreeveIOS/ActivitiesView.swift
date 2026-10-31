@@ -10,6 +10,7 @@ struct ActivitiesView: View {
     @State private var selectedGearID: String?
     @State private var gearChoices: [DreeveGear]
     @State private var gearError: String?
+    @State private var gearChoicesServer = ""
     private let embedded: Bool
     private let sportFilter: ActivitySportFilter?
     @State private var sportActivities: [DreeveActivity] = []
@@ -224,6 +225,13 @@ struct ActivitiesView: View {
     }
     private func loadGearChoices() async {
         let server = session.serverAddress
+        if !gearChoicesServer.isEmpty && gearChoicesServer != server { gearChoices = [] }
+        gearChoicesServer = server
+        if let saved = session.cachedGear() {
+            let current = gearChoices.first { $0.id == selectedGearID }
+            gearChoices = saved
+            if let current, !saved.contains(where: { $0.id == current.id }) { gearChoices.append(current) }
+        }
         do {
             let choices = try await session.gear()
             guard server == session.serverAddress, !Task.isCancelled else { return }
@@ -232,7 +240,7 @@ struct ActivitiesView: View {
             if let current, !choices.contains(where: { $0.id == current.id }) { gearChoices.append(current) }
             gearError = nil
         } catch {
-            if server == session.serverAddress, !Task.isCancelled { gearError = "Gear filters unavailable. Try again." }
+            if server == session.serverAddress, !Task.isCancelled { gearError = gearChoices.isEmpty ? "Gear filters unavailable. Try again." : "Showing saved gear filters. Pull to refresh when connected." }
         }
     }
 }

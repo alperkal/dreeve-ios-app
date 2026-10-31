@@ -3,11 +3,15 @@ import Charts
 
 struct DashboardView: View {
     @EnvironmentObject private var session: DreeveSession
+    @AppStorage("overview.distanceTrendSport") private var distanceTrendSport = DistanceTrendSport.running.rawValue
 
     @EnvironmentObject private var persistence: GoalPersistence
 
     private var insights: ActivityInsights { ActivityInsights(activities: session.insightsActivities) }
-    private var monthDistance: CalendarMonthDistance { CalendarMonthDistance(activities: session.calendarMonthActivities) }
+    private var trendSport: DistanceTrendSport { DistanceTrendSport(rawValue: distanceTrendSport) ?? .running }
+    private var weekDistance: LastSevenDaysDistance { LastSevenDaysDistance(activities: session.insightsActivities, sport: trendSport) }
+    private var monthDistance: CalendarMonthDistance { CalendarMonthDistance(activities: session.calendarMonthActivities, sport: trendSport) }
+    private var yearDistance: CalendarYearDistance { CalendarYearDistance(activities: session.calendarYearActivities, sport: trendSport) }
 
     var body: some View {
         NavigationStack {
@@ -45,12 +49,15 @@ struct DashboardView: View {
                     }
 
                     TabView {
-                        DistanceTrendCard(title: "Last 7 days", total: insights.weekKm,
-                                          points: insights.dailyDistances, monthly: false)
+                        DistanceTrendCard(title: "Last 7 days", sport: trendSport.label, total: weekDistance.total,
+                                          points: weekDistance.daily, monthly: false)
                             .tag(0)
-                        DistanceTrendCard(title: "This month", total: monthDistance.total,
+                        DistanceTrendCard(title: "This month", sport: trendSport.label, total: monthDistance.total,
                                           points: monthDistance.daily, monthly: true)
                             .tag(1)
+                        DistanceTrendCard(title: "This year", sport: trendSport.label, total: yearDistance.total,
+                                          points: yearDistance.monthly, monthly: false, yearly: true)
+                            .tag(2)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .always))
                     .frame(height: 250)
@@ -135,9 +142,11 @@ struct DashboardView: View {
 
 private struct DistanceTrendCard: View {
     let title: String
+    let sport: String
     let total: Double
     let points: [DailyDistance]
     let monthly: Bool
+    var yearly: Bool = false
 
     var body: some View {
         SurfaceCard {
@@ -145,14 +154,14 @@ private struct DistanceTrendCard: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("DISTANCE TREND").font(.caption.weight(.semibold)).tracking(1.5).foregroundStyle(DreeveTheme.muted)
-                        Text(title).font(.headline)
+                        Text("\(title) · \(sport)").font(.headline)
                     }
                     Spacer()
                     Text("\(total.oneDecimal) km").foregroundStyle(DreeveTheme.accent).font(.headline.monospacedDigit())
                 }
                 Chart {
                     ForEach(points) { point in
-                        BarMark(x: .value("Day", point.day, unit: .day), y: .value("Distance", point.km))
+                        BarMark(x: .value(yearly ? "Month" : "Day", point.day, unit: yearly ? .month : .day), y: .value("Distance", point.km))
                             .foregroundStyle(DreeveTheme.accent.gradient).cornerRadius(monthly ? 2 : 5)
                     }
                 }
@@ -160,7 +169,11 @@ private struct DistanceTrendCard: View {
                     AxisMarks(position: .leading) { AxisGridLine(); AxisTick(); AxisValueLabel(anchor: .trailing) }
                 }
                 .chartXAxis {
-                    if monthly {
+                    if yearly {
+                        AxisMarks(values: .stride(by: .month)) { _ in
+                            AxisValueLabel(format: .dateTime.month(.abbreviated), anchor: .top)
+                        }
+                    } else if monthly {
                         AxisMarks(values: .stride(by: .day, count: 5)) { _ in
                             AxisValueLabel(format: .dateTime.day(), anchor: .top)
                         }
@@ -175,6 +188,6 @@ private struct DistanceTrendCard: View {
             .padding(.bottom, 16)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(title) distance trend, \(total.oneDecimal) kilometers")
+        .accessibilityLabel("\(title) \(sport) distance trend, \(total.oneDecimal) kilometers")
     }
 }

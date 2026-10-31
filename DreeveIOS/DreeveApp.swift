@@ -100,6 +100,10 @@ struct RootView: View {
         .onReceive(healthSync.$records) { records in
             healthDiscovery.noteRecords(records, server: session.serverAddress)
         }
+        .task(id: "gearInventory|\(session.serverAddress)|\(scenePhase == .active)") {
+            guard scenePhase == .active, session.isConfigured else { return }
+            _ = try? await session.gear()
+        }
         .task(id: "importQueue|\(session.serverAddress)|\(scenePhase == .active)") {
             guard scenePhase == .active, session.isConfigured else { return }
             while !Task.isCancelled {

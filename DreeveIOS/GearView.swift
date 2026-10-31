@@ -88,13 +88,16 @@ struct GearView: View {
         let request = UUID(); requestID = request
         loading = true
         message = nil
+        if let saved = session.cachedGear() { gear = saved }
         defer { if session.serverAddress == server, requestID == request { loading = false } }
         do {
             let items = try await session.gear()
             guard session.serverAddress == server, requestID == request, !Task.isCancelled else { return }
             gear = items
         } catch {
-            if session.serverAddress == server, requestID == request, !Task.isCancelled { message = error.localizedDescription }
+            if session.serverAddress == server, requestID == request, !Task.isCancelled {
+                message = gear.isEmpty ? "Could not load gear. \(error.localizedDescription)" : "Showing saved gear. \(error.localizedDescription)"
+            }
         }
     }
 }

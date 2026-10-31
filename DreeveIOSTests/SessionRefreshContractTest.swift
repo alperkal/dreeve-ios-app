@@ -36,6 +36,11 @@ private final class OverviewRefreshProtocol: URLProtocol {
             """)
             return
         }
+        if request.url!.path.hasSuffix("/gear") {
+            if Self.mode == .offline { client!.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)); return }
+            respond(body: #"{"gear":[{"id":"gear-1","name":"Saved shoes","type":"shoe"}]}"#)
+            return
+        }
         if request.url!.path.hasSuffix("file-imports") {
             respond(body: #"{"fileImports":[{"id":"import-1","filename":"historical.fit","source":"file","status":"imported","activityId":"historical","importedOn":"2026-10-16"}],"pagination":{"page":1,"size":50,"total":1,"totalPages":1}}"#)
             return
@@ -183,11 +188,37 @@ private final class OverviewRefreshProtocol: URLProtocol {
         precondition(feed.showingCachedActivities && feed.activityListError?.contains("500") == true)
         precondition(feed.activities.contains { $0.id == "run-1" } && feed.activities.contains { $0.id.hasPrefix("cached-") })
         precondition(Set(feed.activities.map(\.id)).count == feed.activities.count)
+        // Year-to-date history is loaded from the correct saved instance without networking.
+        let yearStore = try ActivityIndexStore(inMemory: true)
+        let yearStart = String(GoalCalendar.today().prefix(4)) + "-01-01T08:00:00"
+        let firstOfYear = ActivitySummaryRecord(id: "year-start", name: "Year start", sportType: "Run",
+            startDateLocal: yearStart, distanceMeters: 1000, movingTimeSeconds: 300,
+            elapsedTimeSeconds: 300, elevationGainMeters: 0, gearId: nil)
+        try await yearStore.upsertBatch(instanceHash: scope, records: [firstOfYear])
+        try await yearStore.upsertBatch(instanceHash: "other-instance", records: [cachedRows[0]])
+        _ = try await yearStore.finalizeFullReconcile(instanceHash: scope, authoritativeActivityIds: ["year-start"])
+        let yearSession = DreeveSession(activityIndexStore: yearStore)
+        OverviewRefreshProtocol.pages = []
+        await yearSession.loadCachedActivityIndex()
+        precondition(yearSession.calendarYearActivities.map(\.id) == ["year-start"] && OverviewRefreshProtocol.pages.isEmpty)
         let emptyStore = try ActivityIndexStore(inMemory: true)
         let emptyFeed = DreeveSession(activityIndexStore: emptyStore)
         OverviewRefreshProtocol.mode = .offline
         await emptyFeed.reloadActivities()
         precondition(emptyFeed.activities.isEmpty && !emptyFeed.hasMore && emptyFeed.activityListError != nil)
+        let inventoryRoot = FileManager.default.temporaryDirectory.appendingPathComponent("session-gear-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: inventoryRoot) }
+        let inventoryCache = GearInventoryCache(directory: inventoryRoot)
+        let inventorySession = DreeveSession(activityIndexStore: emptyStore, gearInventoryCache: inventoryCache)
+        OverviewRefreshProtocol.mode = .success
+        let loadedGear = try await inventorySession.gear()
+        precondition(loadedGear.first?.name == "Saved shoes")
+        OverviewRefreshProtocol.mode = .offline
+        let relaunchedInventory = DreeveSession(activityIndexStore: emptyStore, gearInventoryCache: inventoryCache)
+        precondition(relaunchedInventory.cachedGear()?.first?.name == "Saved shoes")
+        do { _ = try await relaunchedInventory.gear(); preconditionFailure("Offline gear request unexpectedly succeeded") }
+        catch is URLError {}
+        precondition(relaunchedInventory.cachedGear()?.first?.id == "gear-1")
         print("Session/index tests passed: shared full/delta refresh, real API query names, local gear/location, cached relaunch, combined goals, cancellation, failure/retry, and write-through edits/deletions.")
     }
 }

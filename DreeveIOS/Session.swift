@@ -10,6 +10,7 @@ final class DreeveSession: ObservableObject {
     @Published private(set) var activities: [DreeveActivity] = []
     @Published private(set) var insightsActivities: [DreeveActivity] = []
     @Published private(set) var calendarMonthActivities: [DreeveActivity] = []
+    @Published private(set) var calendarYearActivities: [DreeveActivity] = []
     @Published private(set) var hasMore = true
     @Published private(set) var showingCachedActivities = false
     @Published private(set) var activityListError: String?
@@ -30,6 +31,7 @@ final class DreeveSession: ObservableObject {
             (lastActivitySync.map { Date.now.timeIntervalSince($0) > 300 } ?? false)
     }
 
+    private let gearInventoryCache: GearInventoryCache
     let activityIndexStore: ActivityIndexStore?
     private let activitySyncEngine: ActivitySyncEngine?
     private var indexSyncTask: (id: UUID, generation: Int, full: Bool, task: Task<Void, Never>)?
@@ -48,7 +50,8 @@ final class DreeveSession: ObservableObject {
         return DreeveAPIClient(baseURL: url, token: key)
     }
 
-    init(activityIndexStore suppliedStore: ActivityIndexStore? = nil) {
+    init(activityIndexStore suppliedStore: ActivityIndexStore? = nil, gearInventoryCache: GearInventoryCache = GearInventoryCache()) {
+        self.gearInventoryCache = gearInventoryCache
         do {
             let store = try suppliedStore ?? ActivityIndexStore()
             activityIndexStore = store
@@ -89,6 +92,7 @@ final class DreeveSession: ObservableObject {
         activities = []
         insightsActivities = []
         calendarMonthActivities = []
+        calendarYearActivities = []
         page = 0
         hasMore = true
         didLoadInsights = false
@@ -107,6 +111,7 @@ final class DreeveSession: ObservableObject {
         activities = []
         insightsActivities = []
         calendarMonthActivities = []
+        calendarYearActivities = []
         page = 0
         hasMore = true
         didLoadInsights = false
@@ -249,6 +254,8 @@ final class DreeveSession: ObservableObject {
             let to = max(week.lastDay, month.lastDay)
             let revision = await store.mutationRevision(instanceHash: scope)
             let records = try await store.queryDateRange(instanceHash: scope, fromDayKeyInclusive: from, toDayKeyInclusive: to)
+            let yearStart = String(today.prefix(4)) + "-01-01"
+            let yearRecords = try await store.queryDateRange(instanceHash: scope, fromDayKeyInclusive: yearStart, toDayKeyInclusive: today)
             let refreshed = try await store.lastSuccessfulSync(instanceHash: scope)
             // Loading an old index offline must not advance its history coverage.
             let historyDay = refreshed.map { min(today, GoalCalendar.today(now: $0)) }
@@ -259,6 +266,7 @@ final class DreeveSession: ObservableObject {
             guard generation == connectionGeneration, revision == currentRevision else { return }
             insightsActivities = records.filter { $0.localDayKey >= insightStart && $0.localDayKey <= today }.map(\.activity)
             calendarMonthActivities = records.filter { $0.localDayKey >= month.start && $0.localDayKey <= today }.map(\.activity)
+            calendarYearActivities = yearRecords.map(\.activity)
             didLoadInsights = true
             if let refreshed {
                 lastActivitySync = refreshed
@@ -392,6 +400,7 @@ final class DreeveSession: ObservableObject {
         if let i = activities.firstIndex(where: { $0.id == id }) { activities[i] = changed }
         if let i = insightsActivities.firstIndex(where: { $0.id == id }) { insightsActivities[i] = changed }
         if let i = calendarMonthActivities.firstIndex(where: { $0.id == id }) { calendarMonthActivities[i] = changed }
+        if let i = calendarYearActivities.firstIndex(where: { $0.id == id }) { calendarYearActivities[i] = changed }
         goalProgress.changed(changed)
         if indexed { await loadCachedActivityIndex() }
         return changed
@@ -414,6 +423,7 @@ final class DreeveSession: ObservableObject {
         activities.removeAll { $0.id == id }
         insightsActivities.removeAll { $0.id == id }
         calendarMonthActivities.removeAll { $0.id == id }
+        calendarYearActivities.removeAll { $0.id == id }
         goalProgress.changed(deletedID: id)
         if indexed { await loadCachedActivityIndex() }
     }
@@ -437,9 +447,19 @@ final class DreeveSession: ObservableObject {
         return imports
     }
 
+    func cachedGear() -> [DreeveGear]? {
+        guard let client else { return nil }
+        return try? gearInventoryCache.load(instanceID: GoalEngine.instanceID(client.baseURL))
+    }
+
     func gear() async throws -> [DreeveGear] {
         guard let client else { throw APIError.notConfigured }
-        return try await client.gear()
+        let generation = connectionGeneration
+        let items = try await client.gear()
+        guard generation == connectionGeneration, !Task.isCancelled else { throw CancellationError() }
+        // A local disk failure must not turn a successful inventory request into a failure.
+        try? gearInventoryCache.save(items, instanceID: GoalEngine.instanceID(client.baseURL))
+        return items
     }
 
     func attachImage(_ id: String, data: Data) async throws {
