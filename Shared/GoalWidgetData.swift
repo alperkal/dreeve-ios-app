@@ -1,5 +1,35 @@
 import Foundation
 
+/// Shared appearance choice; missing or old files retain the original dark design.
+enum ThemePreference: String, Codable, CaseIterable, Identifiable {
+    case dark, light, system
+    var id: String { rawValue }
+    var label: String { rawValue.capitalized }
+}
+
+struct ThemePreferenceStorage {
+    let directory: URL?
+    init(directory: URL? = GoalWidgetStorage.sharedDirectory()) { self.directory = directory }
+    private var url: URL? { directory?.appendingPathComponent("appearance.json") }
+    func read() -> ThemePreference {
+        guard let url, let data = try? Data(contentsOf: url),
+              let value = try? JSONDecoder().decode(ThemePreference.self, from: data) else { return .dark }
+        return value
+    }
+    func write(_ value: ThemePreference) throws {
+        guard let url else { throw CocoaError(.fileNoSuchFile) }
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try JSONEncoder().encode(value)
+        #if os(iOS) || os(watchOS)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
+        var file = url; var flags = URLResourceValues(); flags.isExcludedFromBackup = true
+        try file.setResourceValues(flags)
+    }
+}
+
 struct WidgetGoal: Codable, Equatable, Identifiable {
     let id: String
     let title: String

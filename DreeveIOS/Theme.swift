@@ -1,12 +1,30 @@
 import SwiftUI
 
-// Initial visual direction, independent of any official Dreeve brand assets.
+typealias AppAppearance = ThemePreference
+
+extension ThemePreference {
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .dark: return .dark
+        case .light: return .light
+        case .system: return nil
+        }
+    }
+}
+
+// Dynamic colors follow the selected color scheme throughout SwiftUI and MapKit.
 enum DreeveTheme {
-    static let background = Color(red: 9/255, green: 16/255, blue: 28/255)
-    static let surface = Color(red: 19/255, green: 31/255, blue: 47/255)
-    static let elevated = Color(red: 27/255, green: 42/255, blue: 59/255)
-    static let accent = Color(red: 177/255, green: 244/255, blue: 82/255)
-    static let muted = Color(red: 153/255, green: 170/255, blue: 185/255)
+    private static func adaptive(dark: (CGFloat, CGFloat, CGFloat), light: (CGFloat, CGFloat, CGFloat)) -> Color {
+        Color(uiColor: UIColor { traits in
+            let value = traits.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: value.0 / 255, green: value.1 / 255, blue: value.2 / 255, alpha: 1)
+        })
+    }
+    static let background = adaptive(dark: (9, 16, 28), light: (243, 247, 241))
+    static let surface = adaptive(dark: (19, 31, 47), light: (255, 255, 255))
+    static let elevated = adaptive(dark: (27, 42, 59), light: (227, 236, 224))
+    static let accent = adaptive(dark: (177, 244, 82), light: (39, 102, 39))
+    static let muted = adaptive(dark: (153, 170, 185), light: (79, 96, 108))
 }
 
 struct SurfaceCard<Content: View>: View {

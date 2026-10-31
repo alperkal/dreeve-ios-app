@@ -16,6 +16,17 @@ import Foundation
         let data = try JSONEncoder().encode(envelope(1))
         let decoded = try GoalWatchEnvelope.decode(data)
         precondition(decoded.snapshot == snapshot)
+        precondition(decoded.appearance == nil) // Older packets default to dark.
+        var appearancePacket = envelope(2)
+        appearancePacket.appearance = .light
+        precondition(appearancePacket.changesVisibleGoals(from: decoded))
+        let appearanceData = try JSONEncoder().encode(appearancePacket)
+        let decodedAppearance = try GoalWatchEnvelope.decode(appearanceData)
+        precondition(decodedAppearance.appearance == .light && decodedAppearance.snapshot == snapshot)
+        precondition(decodedAppearance.needsTimelineReload(replacing: decoded))
+        var systemPacket = envelope(3)
+        systemPacket.appearance = .system
+        precondition(systemPacket.changesVisibleGoals(from: appearancePacket))
         let payload = try decoded.contextPayload()
         let payloadEnvelope = try GoalWatchEnvelope.decode(payload["goalEnvelope"] as! Data)
         precondition(payload.count == 1 && payloadEnvelope == decoded)

@@ -30,7 +30,7 @@ App screens are captured from the iPhone 17 simulator using demo activities and 
 
 ## Features included
 
-- Native dark-themed SwiftUI tab navigation: Overview, Activities, Goals, Gear, Health sync, Settings.
+- Native SwiftUI tab navigation with Dark, Light and System appearance options: Overview, Activities, Goals, Gear, Health sync, Settings.
 - Connect to a self-hosted Dreeve URL, validate `GET /api/v1/status`, save API token in iOS Keychain (not in source or UserDefaults).
 - Browse activities with pagination and local search, see metrics and GPS routes with MapKit.
 - Edit name, description, sport type, and assigned gear; delete an activity with confirmation.
@@ -400,6 +400,8 @@ If progress is stuck, install the updated **Watch app as well as the iPhone app*
 The Overview distance chart can be swiped between the last seven days, the current calendar month, and the current calendar year (month by month). In Settings, choose Running or Swimming for all three chart pages. Running combines Run and VirtualRun; Swimming includes pool and open-water swims. Other Overview totals continue to include all sports.
 
 Gear inventory is saved locally per Dreeve instance when fetched online. Activity details, Gear and the gear filter can show saved names offline; saved results may be out of date until the next successful refresh. The app also refreshes gear when it enters the foreground. Gear images remain in their separate local cache.
+
+Choose **Dark**, **Light** or **System** in Settings → Appearance. Dark preserves the original navy and lime palette; Light uses a light background and a darker green accent, while System follows the iPhone appearance. The preference is shared with iPhone goal widgets and sent to the paired Watch; saved appearances remain available offline. Watch faces can override complication colors. Exported share cards keep their existing styling.
 
 ## Nearby routes
 

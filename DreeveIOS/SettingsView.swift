@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @AppStorage("appearance.theme") private var appearance = AppAppearance.dark.rawValue
     @EnvironmentObject private var session: DreeveSession
     @AppStorage("overview.distanceTrendSport") private var distanceTrendSport = DistanceTrendSport.running.rawValue
     @EnvironmentObject private var watchBridge: PhoneGoalWatchBridge
@@ -135,6 +136,18 @@ struct SettingsView: View {
                         Picker("Distance trend activity", selection: $distanceTrendSport) {
                             ForEach(DistanceTrendSport.allCases) { sport in
                                 Text(sport.label).tag(sport.rawValue)
+                            }
+                        }.pickerStyle(.segmented)
+                    }
+                }
+                SurfaceCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label("Appearance", systemImage: "circle.lefthalf.filled").font(.headline)
+                        Text("Choose a theme or follow your iPhone’s appearance.")
+                            .font(.caption).foregroundStyle(DreeveTheme.muted)
+                        Picker("Appearance", selection: $appearance) {
+                            ForEach(AppAppearance.allCases) { option in
+                                Text(option.label).tag(option.rawValue)
                             }
                         }.pickerStyle(.segmented)
                     }

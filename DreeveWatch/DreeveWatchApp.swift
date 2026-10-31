@@ -8,6 +8,7 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = WatchGoalStore()
     @Published private(set) var snapshot: GoalWidgetSnapshot
     @Published private(set) var unavailable: Bool
+    @Published private(set) var appearance: ThemePreference
     @Published private(set) var message: String?
     private let storage = GoalWatchStorage()
     private var backgroundTasks: [WKRefreshBackgroundTask] = []
@@ -18,6 +19,7 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
         let result = GoalWatchStorage().readResult()
         snapshot = result.snapshot ?? .empty
         unavailable = result.snapshot == nil
+        appearance = GoalWatchStorage().envelope()?.appearance ?? .dark
         super.init()
         if WCSession.isSupported() {
             let session = WCSession.default
@@ -31,7 +33,7 @@ final class WatchGoalStore: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
     func reloadSaved() {
-        if let saved = storage.readResult().snapshot { snapshot = saved; unavailable = false }
+        if let saved = storage.envelope() { snapshot = saved.snapshot; appearance = saved.appearance ?? .dark; unavailable = false }
     }
     func setForeground(_ active: Bool) {
         requestGate.isForeground = active
@@ -148,7 +150,8 @@ final class WatchAppDelegate: NSObject, WKApplicationDelegate {
     var body: some Scene {
         WindowGroup {
             WatchGoalsView().environmentObject(store)
-                .tint(watchAccent)
+                .preferredColorScheme(store.appearance == .system ? nil : (store.appearance == .light ? .light : .dark))
+                .tint(watchAccent(store.appearance))
                 .onChange(of: phase) { _, value in store.setForeground(value == .active) }
                 .task(id: phase) {
                     store.setForeground(phase == .active)
@@ -167,6 +170,7 @@ struct WatchGoalsView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
+                Group {
                 if store.unavailable {
                     Text("Open Dreeve on iPhone to send your goals.")
                 } else if store.snapshot.goals.isEmpty {
@@ -178,7 +182,7 @@ struct WatchGoalsView: View {
                             VStack(alignment: .leading, spacing: 5) {
                                 Label(goal.title, systemImage: watchGoalSymbol(goal.sport)).font(.headline)
                                 Text(goal.progressText(at: timeline.date)).font(.caption)
-                                ProgressView(value: goal.fraction(at: timeline.date)).tint(watchAccent)
+                                ProgressView(value: goal.fraction(at: timeline.date)).tint(watchAccent(store.appearance))
                             }
                         }
                     }
@@ -186,7 +190,11 @@ struct WatchGoalsView: View {
                 Button("Sync from iPhone") { store.requestLatest(refreshComplication: true) }
                 if let message = store.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
                 Text("Refresh Dreeve on iPhone to update activities.").font(.footnote).foregroundStyle(.secondary)
+                }.listRowBackground(watchSurface(store.appearance))
             }
+            .scrollContentBackground(.hidden)
+            .background(watchBackground(store.appearance))
+            .foregroundStyle(store.appearance == .light ? Color.black : Color.white)
             .navigationTitle("Your goals")
             .navigationDestination(for: WatchGoalSelection.self) { selection in
                 WatchGoalDetail(selection: selection)
@@ -197,7 +205,15 @@ struct WatchGoalsView: View {
         }
     }
 }
-let watchAccent = Color(red: 177/255, green: 244/255, blue: 82/255)
+func watchBackground(_ appearance: ThemePreference) -> Color {
+    appearance == .light ? Color(red: 243/255, green: 247/255, blue: 241/255) : .black
+}
+func watchSurface(_ appearance: ThemePreference) -> Color {
+    appearance == .light ? .white : Color(white: 0.15)
+}
+func watchAccent(_ appearance: ThemePreference) -> Color {
+    appearance == .light ? Color(red: 39/255, green: 102/255, blue: 39/255) : Color(red: 177/255, green: 244/255, blue: 82/255)
+}
 struct WatchGoalDetail: View {
     @EnvironmentObject private var store: WatchGoalStore
     let selection: WatchGoalSelection
@@ -210,9 +226,9 @@ struct WatchGoalDetail: View {
                         Gauge(value: goal.fraction(at: timeline.date)) {
                             Image(systemName: watchGoalSymbol(goal.sport))
                         } currentValueLabel: {
-                            if goal.isComplete(at: timeline.date) { Image(systemName: "checkmark").foregroundStyle(watchAccent) }
+                            if goal.isComplete(at: timeline.date) { Image(systemName: "checkmark").foregroundStyle(watchAccent(store.appearance)) }
                             else { Text(goal.value(at: timeline.date) == nil ? "—" : "\(Int((goal.fraction(at: timeline.date) * 100).rounded()))%") }
-                        }.gaugeStyle(.accessoryCircular).tint(watchAccent).scaleEffect(1.3).padding(12)
+                        }.gaugeStyle(.accessoryCircular).tint(watchAccent(store.appearance)).scaleEffect(1.3).padding(12)
                         Text(goal.progressText(at: timeline.date)).monospacedDigit()
                         Text(goal.frequency).font(.caption).foregroundStyle(.secondary)
                         if goal.value(at: timeline.date) == nil { Text("New period · refresh on iPhone").font(.caption) }
@@ -225,6 +241,8 @@ struct WatchGoalDetail: View {
                     Text("Goal unavailable. Choose another goal in the complication settings.").padding()
                 }
             }
+            .background(watchBackground(store.appearance))
+            .foregroundStyle(store.appearance == .light ? Color.black : Color.white)
         }
     }
 }

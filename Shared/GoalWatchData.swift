@@ -7,6 +7,7 @@ struct GoalWatchEnvelope: Codable, Equatable {
     let revision: Int
     let sentAt: Date
     let snapshot: GoalWidgetSnapshot
+    var appearance: ThemePreference? = nil // Optional for backward-compatible cached envelopes.
 
     static let maximumBytes = 4_000_000
     static let contextBytes = 55_000
@@ -51,7 +52,8 @@ struct GoalWatchEnvelope: Codable, Equatable {
     }
     func changesVisibleGoals(from previous: GoalWatchEnvelope?) -> Bool {
         guard let old = previous?.snapshot else { return true }
-        return snapshot.instanceID != old.instanceID || snapshot.goals != old.goals || snapshot.favorites != old.favorites
+        return snapshot.instanceID != old.instanceID || snapshot.goals != old.goals || snapshot.favorites != old.favorites ||
+            (appearance ?? .dark) != (previous?.appearance ?? .dark)
     }
 }
 

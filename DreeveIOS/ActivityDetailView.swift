@@ -25,6 +25,7 @@ struct ActivityDetailView: View {
     @State private var isBusy = false
     @State private var errorMessage: String?
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var photoUploadStatus: String?
     @State private var showingShareCardSheet = false
     @State private var activityWebPage: ActivityWebPage?
 
@@ -146,7 +147,15 @@ struct ActivityDetailView: View {
 
                     HStack(spacing: 12) {
                         PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                            Label("Add photo", systemImage: "photo.badge.plus")
+                            if let photoUploadStatus {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                    Text(photoUploadStatus)
+                                }
+                                .accessibilityElement(children: .combine)
+                            } else {
+                                Label("Add photo", systemImage: "photo.badge.plus")
+                            }
                         }
                         .buttonStyle(.bordered)
                         .disabled(showingSavedActivity || isBusy || !session.canUpload)
@@ -220,17 +229,25 @@ struct ActivityDetailView: View {
         } message: { Text(errorMessage ?? "Unknown error") }
         .onChange(of: selectedPhoto) { _, newItem in
             guard let newItem else { return }
+            isBusy = true
+            photoUploadStatus = "Preparing photo…"
             Task {
-                isBusy = true
-                defer { isBusy = false }
+                defer {
+                    isBusy = false
+                    photoUploadStatus = nil
+                    selectedPhoto = nil
+                }
                 do {
-                    guard let data = try await newItem.loadTransferable(type: Data.self),
-                          let image = UIImage(data: data), let jpeg = image.jpegData(compressionQuality: 0.85)
-                    else { throw APIError.unsupportedFile }
+                    guard let data = try await newItem.loadTransferable(type: Data.self) else { throw APIError.unsupportedFile }
+                    let jpeg = await Task.detached(priority: .userInitiated) {
+                        UIImage(data: data)?.jpegData(compressionQuality: 0.85)
+                    }.value
+                    guard let jpeg else { throw APIError.unsupportedFile }
+                    photoUploadStatus = "Uploading photo…"
                     try await session.attachImage(activityID, data: jpeg)
+                    photoUploadStatus = "Updating activity…"
                     await load()
                 } catch { errorMessage = error.localizedDescription }
-                selectedPhoto = nil
             }
         }
     }

@@ -5,6 +5,7 @@ import WidgetKit
 
 @main
 struct DreeveApp: App {
+    @AppStorage("appearance.theme") private var appearance = AppAppearance.dark.rawValue
     @StateObject private var watchBridge = PhoneGoalWatchBridge()
     @StateObject private var goals = GoalPersistence()
     @StateObject private var session = DreeveSession()
@@ -24,6 +25,17 @@ struct DreeveApp: App {
                 .environmentObject(watchBridge)
                 .environmentObject(goals)
                 .task { watchBridge.start() }
+                .task(id: appearance) {
+                    let preference = ThemePreference(rawValue: appearance) ?? .dark
+                    let storage = ThemePreferenceStorage()
+                    if storage.read() != preference {
+                        do {
+                            try storage.write(preference)
+                            for kind in GoalWidgetStorage.kinds { WidgetCenter.shared.reloadTimelines(ofKind: kind) }
+                        } catch { /* Widgets keep their last saved appearance if storage is unavailable. */ }
+                    }
+                    watchBridge.setAppearance(preference)
+                }
                 .environmentObject(session.goalProgress)
                 .environmentObject(session)
                 .environmentObject(healthSync)
@@ -41,7 +53,7 @@ struct DreeveApp: App {
                         for kind in GoalWidgetStorage.kinds { WidgetCenter.shared.reloadTimelines(ofKind: kind) }
                     } catch {}
                 }
-                .preferredColorScheme(.dark)
+                .preferredColorScheme((AppAppearance(rawValue: appearance) ?? .dark).colorScheme)
         }
     }
 }

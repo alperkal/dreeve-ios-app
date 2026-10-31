@@ -9,12 +9,13 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
     // activation must not consume the update that should wake the complication.
     private let priorityStorage = GoalWatchStorage(directory: URL.applicationSupportDirectory.appendingPathComponent("WatchOutbound/Priority", isDirectory: true))
     private var latest: GoalWatchEnvelope?
+    private var appearance: ThemePreference = .dark
     private var started = false
     @Published private(set) var syncStatus = "Waiting for Watch connection."
     private var liveInFlight: GoalWatchEnvelope?
     private var lastAcknowledged: GoalWatchEnvelope?
 
-    override init() { super.init(); latest = storage.envelope() }
+    override init() { super.init(); latest = storage.envelope(); appearance = latest?.appearance ?? .dark }
     func start() {
         guard WCSession.isSupported() else { return }
         if !started { started = true; WCSession.default.delegate = self; WCSession.default.activate() }
@@ -32,12 +33,17 @@ final class PhoneGoalWatchBridge: NSObject, ObservableObject, WCSessionDelegate 
     func selectInstance(_ instance: String?) {
         if instance == nil || latest?.snapshot.instanceID != instance { publish(.empty) }
     }
+    func setAppearance(_ value: ThemePreference) {
+        appearance = value
+        guard let latest else { return }
+        publish(latest.snapshot)
+    }
     func publish(_ snapshot: GoalWidgetSnapshot) {
         let retained = snapshot.retainingKnownProgress(from: latest?.snapshot)
-        guard latest?.snapshot != retained else { sendLatest(); return }
+        guard latest?.snapshot != retained || (latest?.appearance ?? .dark) != appearance else { sendLatest(); return }
         let sender = latest?.senderID ?? UUID().uuidString
         let envelope = GoalWatchEnvelope(version: 1, senderID: sender, revision: (latest?.revision ?? 0) + 1,
-            sentAt: max(Date.now, latest?.sentAt.addingTimeInterval(0.001) ?? .distantPast), snapshot: retained)
+            sentAt: max(Date.now, latest?.sentAt.addingTimeInterval(0.001) ?? .distantPast), snapshot: retained, appearance: appearance)
         do {
             try storage.write(envelope)
             latest = envelope

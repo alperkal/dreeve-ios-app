@@ -37,6 +37,7 @@ struct WatchComplicationEntry: TimelineEntry {
     let snapshot: GoalWidgetSnapshot
     let selectedID: String?
     var storageUnavailable = false
+    var appearance: ThemePreference = .dark
     var goal: WidgetGoal? {
         guard let selectedID else { return snapshot.selectedGoal(id: nil) }
         return WatchGoalSelection(entityID: selectedID)?.goal(in: snapshot)
@@ -64,7 +65,8 @@ struct WatchComplicationProvider: AppIntentTimelineProvider {
     func snapshot(for configuration: ChooseWatchGoal, in context: Context) async -> WatchComplicationEntry {
         let result = context.isPreview ? GoalWidgetReadResult.available(.example()) : GoalWatchStorage().readResult()
         return WatchComplicationEntry(date: .now, snapshot: result.snapshot ?? .empty,
-            selectedID: context.isPreview ? nil : configuration.goal?.id, storageUnavailable: result.snapshot == nil)
+            selectedID: context.isPreview ? nil : configuration.goal?.id, storageUnavailable: result.snapshot == nil,
+            appearance: context.isPreview ? .dark : (GoalWatchStorage().envelope()?.appearance ?? .dark))
     }
     func timeline(for configuration: ChooseWatchGoal, in context: Context) async -> Timeline<WatchComplicationEntry> {
         let now = Date.now
@@ -72,14 +74,17 @@ struct WatchComplicationProvider: AppIntentTimelineProvider {
         let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))!
         return Timeline(entries: [now, midnight].map {
             WatchComplicationEntry(date: $0, snapshot: result.snapshot ?? .empty, selectedID: configuration.goal?.id,
-                storageUnavailable: result.snapshot == nil)
+                storageUnavailable: result.snapshot == nil, appearance: GoalWatchStorage().envelope()?.appearance ?? .dark)
         }, policy: .after(now.addingTimeInterval(result.snapshot == nil ? 60 : 900)))
     }
 }
 struct WatchGoalComplicationView: View {
     @Environment(\.widgetFamily) private var family
     let entry: WatchComplicationEntry
-    private let accent = Color(red: 177/255, green: 244/255, blue: 82/255)
+    // Watch faces can override tint; use a readable green on their dark backgrounds.
+    private var accent: Color {
+        entry.appearance == .light ? Color(red: 0.40, green: 0.85, blue: 0.35) : Color(red: 177/255, green: 244/255, blue: 82/255)
+    }
     private func progressTint(_ fraction: Double) -> Gradient {
         Gradient(stops: [
             .init(color: accent, location: 0), .init(color: accent, location: fraction),
